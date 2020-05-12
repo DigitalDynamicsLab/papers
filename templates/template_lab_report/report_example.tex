@@ -1,0 +1,100 @@
+%%
+%% This document created by A.Tasora
+%%
+
+\documentclass{digitaldynamics}
+
+%%
+%% Add additional packages here... --------------------------------------------------
+%%
+
+
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb} 
+\usepackage[english]{alg}
+\usepackage{empheq}
+\usepackage{bm}
+\usepackage{listings}
+\usepackage{nccmath}
+
+% For bibliography: use biber and biblatex. 
+% NOTE: your IDE build toolchain should use biber instead of bibtex when compiling.
+\usepackage[backend=biber]{biblatex}
+
+% Use \addbibresource{...}  to use .bib databases from our GIT repository if possible.
+\addbibresource[location=remote]{"https://raw.githubusercontent.com/DigitalDynamicsLab/bibliography/master/refsFEM.bib"}
+\addbibresource[location=remote]{"https://raw.githubusercontent.com/DigitalDynamicsLab/bibliography/master/refsMBS.bib"}
+
+
+
+\sloppy
+
+
+
+%%
+%% Custom commands  --------------------------------------------------------
+%%
+
+	 %% vector as boldface   
+\def\vect#1{\bm{#1}}
+\def\vcovar#1{{\bm{#1}}^*}
+\def\vcontr#1{\underline{\bm{#1}}}
+\def\matr#1{{#1}}
+
+\def\tensor#1{\bm{#1}}
+\def\etensor#1{\underline{\bm{#1}}}
+\def\eetensor#1{\underline{\underline{\bm{#1}}}}
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+
+
+
+\title{Example of tech report}
+
+\author{Alessandro Tasora \\ alessandro.tasora@unipr.it}
+
+\maketitle
+\thispagestyle{fancy}
+
+
+\begin{abstract} 
+
+This is an example of tech report that uses the digitaldynamics.cls LaTeX class.
+Use this as a template to start writing documents in form of articles that will
+be stored as internal or external documents of DigitalDynamics Lab.
+
+\end{abstract}
+
+
+
+
+
+\section{Introduction}
+
+To use this class, create a directory and copy into it the files: digitaldynamics.cls  logo\_digitaldynamics\_red.png  and this .tex file as a starting point. 
+You may want to edit digitaldynamics.cls if you want to change the header title.
+
+Example of citing some literature: \cite{cosserat1909}. \cite{anderson00}. Good.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+
+
+\section{Conclusion}
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+
+
+\printbibliography
+
+\end{document}

@@ -22,9 +22,12 @@
 \usepackage[backend=biber]{biblatex}
 
 % Use \addbibresource{...}  to use .bib databases from our GIT repository if possible.
-\addbibresource[location=remote]{"https://raw.githubusercontent.com/DigitalDynamicsLab/bibliography/master/refsFEM.bib"}
-\addbibresource[location=remote]{"https://raw.githubusercontent.com/DigitalDynamicsLab/bibliography/master/refsMBS.bib"}
-
+% ..using relative path in this GIT:
+\addbibresource{"../../bibliography/refsFEM.bib"}
+\addbibresource{"../../bibliography/refsMBS.bib"}
+% ..or with remote URL as:
+%\addbibresource[location=remote]{"https://raw.githubusercontent.com/DigitalDynamicsLab/papers/master/bibliography/refsFEM.bib"}
+%\addbibresource[location=remote]{"https://raw.githubusercontent.com/DigitalDynamicsLab/papers/master/bibliography/refsMBS.bib"}
 
 
 \sloppy

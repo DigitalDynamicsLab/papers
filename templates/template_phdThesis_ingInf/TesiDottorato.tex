@@ -1,0 +1,200 @@
+%----------------------------------------------------------------------------%
+% Università di Parma                                           			 %
+% Dipartimento di Ingegneria e Architettura									 %
+%                                                                            %
+% Dottorato di Ricerca in Tecnologie dell'Informazione - N_CICLO Ciclo       %
+% Tesi di Dottorato di Nome Cognome                                          %
+% MESE ANNO                                                                  %
+%----------------------------------------------------------------------------%
+
+%----------------------------------------------------------------------------%
+% Dimensioni margini tesi: su A4: Sinistra e destra: 4.0 cm;                 %
+%                                 Alto e basso: 5.3 cm.                      %
+% Dimensioni margini su tesi ritagliata 17 x 24 cm:                          %
+%                                 Sinistra e destra: 2 cm;                   %
+%                                 Alto e basso: 2.5 cm.                      %
+%                                                                            %
+% ATTENZIONE: Il file è progettato per consentire la creazione di 2 versioni %
+%             del documento PDF: una versione con la COPERTINA per la stampa %
+%             ed una versione SENZA COPERTINA per il server DSPACE           %
+%             Per abilitare l'una o l'altra versione seguire i commenti alla %
+%             linea 107 del presente file.                                   %
+%----------------------------------------------------------------------------%
+
+\documentclass[a4paper,11pt]{book}
+
+\usepackage{ifpdf}
+
+\ifpdf                          %Determina pacchetto da usare per le immagini
+  \usepackage[pdftex]{graphicx} %Usa PDFLaTeX, immagini vettoriali in formato
+  \pdfcompresslevel=9           %PDF, bitmap in JPG e PNG
+  \DeclareGraphicsExtensions{.pdf,.jpg,.png}
+  \usepackage[pdftex,colorlinks,plainpages=false,hyperindex,bookmarksopen,
+              linkcolor=black,citecolor=black,urlcolor=black]{hyperref}
+\else
+  \usepackage[dvips]{graphicx}  %Usa DVIPS, immagini in formato EPS
+\fi
+
+\setcounter{secnumdepth}{2}     %2 porta a numerare fino alle subsection, 3 fino alle subsubsection, 4 fino ai paragraph
+\setcounter{tocdepth}{2}        %2 inserisce in sommario fino alle subsection, 3 fino alle subsubsection, 4 fino ai paragraph
+
+%Altri pacchetti utilizzati
+\usepackage[total={13cm,19cm},centering,includehead]{geometry} %Margini
+\usepackage[italian]{babel}     %Sillabazione italiana
+\usepackage[T1]{fontenc}        %Caratteri accentati
+\usepackage{textcomp}           %Simboli dell'encoding TS1, tra cui \textmu
+\usepackage{upgreek}            %Caratteri alfabeto greco diritti
+\usepackage{fancyhdr}           %Intestazioni
+\usepackage{mathptmx}
+\usepackage[scaled=.90]{helvet}
+\usepackage{courier}
+\usepackage{url}
+
+%Un po' di comandi comodi per avere i dati della copertina e del frontespizio uguali
+\providecommand{\autore}{NomeAutore CognomeAutore}                        %candidato
+\providecommand{\tutor}{NomeTutor CognomeTutor}                           %tutor
+\providecommand{\coordinatore}{NomeCoordinatore CognomeCoordinatore}      %coordinatore
+\providecommand{\ciclodottorato}{NCICLODOTTORATO}                         %Ciclo del dottorato in cifre romane maiuscole
+\providecommand{\titolo}{TITOLO DELLA TESI(l1)\\TITOLO DELLA TESI(l2)\\TITOLO DELLA TESI(l3)\\TITOLO DELLA TESI(l4)} %Titolo della tesi
+\providecommand{\meseanno}{Mese ANNO}                                     %Mese ed anno
+
+%I comandi seguenti definiscono il formato delle intestazioni di pagina in
+%lingua italiana utilizzando il pacchetto "fancyheadings"
+%Nota: l'intestazione delle pagine pari (sinistre) è generata dall'ultimo
+%comando \markboth prima della fine della pagina, mentre l'intestazione delle
+%pagine dispari (destre) è generata dal primo comando \markboth o \markright
+%della pagina se presente, altrimenti dall'ultimo \markboth o \markright prima
+%dell'inizio della pagina.
+\pagestyle{fancyplain}
+\renewcommand{\chaptermark}[1]{\markboth{Capitolo \thechapter{}. #1}
+                                        {\thesection{}. #1}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection{}. #1}}
+%To remove uppercase in Summary, Index, Bibliography headers \nouppercase is used!.
+%     NOTE: Can make problems with uppercase roman numbers!
+\lhead[\fancyplain{}{\bfseries\thepage}]
+      {\fancyplain{}{\bfseries\nouppercase{\rightmark}}}
+\rhead[\fancyplain{}{\bfseries\nouppercase{\leftmark}}]
+      {\fancyplain{}{\bfseries\thepage}}
+\cfoot[\fancyplain{}{}]{\fancyplain{}{}}
+\addtolength{\headheight}{1.6pt} %Elimina il warning "Overfull \vbox"
+
+\makeatletter                 %Ridefinisce il comando \cleardoublepage in modo
+\def\cleardoublepage{         %che le pagine eventualmente aggiunte per
+\clearpage                    %portare l'inizio dei capitoli in pagina dispari
+\if@twoside                   %siano completamente bianche e prive di
+  \ifodd\c@page               %intestazione
+  \else
+    \mbox{}
+    \thispagestyle{empty}
+    \newpage
+    \if@twocolumn
+      \mbox{}
+      \newpage
+    \fi
+  \fi
+\fi
+}
+\makeatother
+
+\newcommand{\clearparagraph}{\vspace{0.3cm}} %Spaziatura paragrafi
+
+\begin{document}
+%----------------------------------------------------------------------------%
+\title{Titolo della Tesi}
+\author{Nome Cognome}
+%----------------------------------------------------------------------------%
+\hyphenation{brush-less}      %Sillabazione
+\frenchspacing                %Non aggiunge spazi alla fine delle frasi
+\linespread{1.2}\selectfont   %Interlinea 1.2
+\graphicspath{{images/}}      %Imposta il percorso di ricerca per le immagini
+
+% ---------------------------------------------------------------------------------
+% NOTA: Commentare la prossima riga per creare il PDF da depositare sul sito DSPACE!
+%       In questo modo il PDF NON AVRA' LA COPERTINA DEL DIPARTIMENTO, MA SOLO IL
+%       Frontespizio!
+% ---------------------------------------------------------------------------------
+    \input{copertina.tex}
+
+% NOTA: Questo è il FRONTESPIZIO della tesi. DEVE ESSERE PRESENTE SIA SULLA TESI
+%       DEPOSITATA SUL SERVER DSPACE CHE PER LA TESI DA STAMPARE!
+{
+  \thispagestyle{plain}       %Pagina senza intestazione
+  \linespread{1.5}\selectfont %Imposta interlinea 1.5 per questa pagina
+  \mbox{}
+  \vspace{-0.8cm}
+  \begin{center}
+  \vspace{-10pt}
+  \Large\textbf{UNIVERSIT\`A DI PARMA}\\
+  \vspace{0.3cm}
+  \normalsize\textit{Dottorato di Ricerca in Tecnologie dell'Informazione }\\
+  \vspace{0.3cm}
+  \small\textit{\ciclodottorato{} Ciclo}\\
+  \vspace{2cm}
+  \Large\textbf{\titolo}\\
+  \vspace{2cm}
+  \end{center}
+  \flushleft
+  \normalsize{Coordinatore:}\\
+  \textit{Chiar.mo Prof. \coordinatore}\\
+  \vspace{0.5cm}
+  {Tutor:}\\
+  \textit{Chiar.mo Prof. \tutor}\\
+  \vspace{0.8cm}
+  \flushright \normalsize{{Dottorando: \textit{\autore}}}\\
+  \vspace{1cm}
+  \begin{center}
+  \small\textup{\meseanno}\\
+  \end{center}
+}
+
+\cleardoublepage
+{
+  \thispagestyle{plain}       %Pagina senza intestazione
+  \pagenumbering{roman}       %Numerazione romana per la parte introduttiva
+  \mbox{}
+  \vspace{5cm}
+  \Large\itshape\flushright Dedica (l1)\\
+  \vspace{-0.5cm}
+  \Large\itshape\flushright Dedica (l2)\\
+  \vspace{-0.5cm}
+  \Large\itshape\flushright Dedica (l3)\\
+}
+
+\frontmatter
+\cleardoublepage
+\renewcommand\contentsname{Sommario}
+\tableofcontents
+\markboth{Sommario}{Sommario}
+\listoffigures
+\markboth{Elenco delle Figure}{Elenco delle Figure}
+\listoftables
+\markboth{Elenco delle Tabelle}{Elenco delle Tabelle}
+
+
+\cleardoublepage
+\pagenumbering{arabic}
+\mainmatter
+      \input{introd}
+      \input{cap1}
+      \input{cap2}
+
+\cleardoublepage
+% da qui in poi \chapter genera un'appendice
+\appendix
+\renewcommand{\chaptermark}[1]{\markboth{{\appendixname}\ \thechapter.\hspace{1em}#1}{}}
+%      \input{app1}
+
+\cleardoublepage
+\addcontentsline{toc}{chapter}{\numberline{}Bibliografia}
+
+%\bibliographystyle{abbrv}      %Alphabetically sorted with number references. Names are abbreviated
+%\bibliographystyle{unsrt}      %Citation sorted with number references.
+\bibliographystyle{unsrturl}    %Citation sorted with number references. With URL
+\bibliography{local,public}     % ATTENZIONE se
+                                % non avete la variabile di ambiente BIBINPUTS
+                                % correttamente impostata non vi trova tesid.bib !!
+\cleardoublepage
+\addcontentsline{toc}{chapter}{\numberline{}Ringraziamenti}
+      \input{ringraziamenti}
+
+\end{document}

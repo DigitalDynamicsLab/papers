@@ -17,6 +17,16 @@
 \usepackage{listings}
 \usepackage{nccmath}
 
+% For bibliography: use biber and biblatex. 
+% NOTE: your IDE build toolchain should use biber instead of bibtex when compiling.
+\usepackage[backend=biber]{biblatex}
+
+% Use \addbibresource{...}  to use .bib databases from our GIT repository if possible.
+% ..using relative path in this GIT:
+\addbibresource{"../../bibliography/refsFEM.bib"}
+\addbibresource{"../../bibliography/refsMBS.bib"}
+
+
 \sloppy
 
 \graphicspath{{./pics/}}
@@ -123,6 +133,7 @@ The following sections represent a primer on computational mechanics, starting f
 
 In the following we list some basic notations that will be used later when dealing with computer methods. 
 When possible, we highlight the similarities between the vector/matrix notation and the tensor notation.
+The reader is invited to look for additional details on the topic in textbooks such as \cite{Hackbusch2012,Truesdell2004}.
 
 
 \subsection{Symbols}
@@ -1170,12 +1181,40 @@ We can express this with tensor notation and generalize it:
 \end{itemize}
 
 
+\subsection{Exercises}
+
+{
+\small
+
+\begin{enumerate}
+	
+	\item Write a software procedure to compute the 3x3 stress tensor from a given 3x3 strain tensor and a given fourth-order $\tensor{C}$ elastic tensor:
+	\[
+	\tensor{\sigma} = \tensor{C} : \tensor{\epsilon}
+	\]
+	You can make assumptions like material isotropy to justify that you do not need to pass all 81 components of $\tensor{C}$.
+	
+	\item Write $\tensor{\sigma} = \tensor{C} : \tensor{\epsilon}$ using the Voigt notation and conventional linear algebra, where one can exploit the symmetry of $\tensor{\epsilon}$ and $\tensor{\sigma}$ to rewrite stress and strains as simple column vectors:
+	$\tensor{\sigma} = \{ \sigma_{xx}, \sigma_{yy}, \sigma_{zz}, \sigma_{xy}, \sigma_{zx}, \sigma_{yz} \}^T 
+	                  = \{ \sigma_x, \sigma_y, \sigma_z, \tau_{xy}, \tau_{zx}, \tau_{yz} \}^T$,
+	$\tensor{\epsilon} = \{ \epsilon_{xx}, \epsilon_{yy}, \epsilon_{zz}, 2\epsilon_{xy}, 2\epsilon_{zx}, 2\epsilon_{yz} \}^T  
+	                   = \{ \epsilon_x, \epsilon_y, \epsilon_z, \gamma_{xy}, \gamma_{zx}, \gamma_{yz} \}^T $ 
+	and $\tensor{C}$ as a 6x6 matrix.
+	Note the use of the engineering strain definition $\epsilon_{xy} = \frac{1}{2}\gamma_{xy}$.
+	Demonstrate that one needs at most 21 independent components to define the symmetric $\tensor{C}$ matrix.
+	
+	
+\end{enumerate}
+
+}
+
 
 
 \newpage
 \section{Classes of problems}
 
 Thie following is a short overview of important special cases of PDEs. 
+The interested reader can find more details on PDEs in the area of mechanics on specialized textbooks such as \cite{cosserat1909,Truesdell2004}.
 
 
 \subsection{Partial differential equations}
@@ -1555,11 +1594,39 @@ With the simplification of Newtonian fluid and incompressible flow one has:
 	\end{figure}
 
 
+\subsection{Exercises}
+
+{
+\small
+
+\begin{enumerate}
+	
+	\item Write the strong form of the straight Euler-Bernoulli beam theory in linear elasticity. Extend it to the case of dynamics, adding inertial forces caused by a linear mass density of the beam.
+	
+	\item Write the strong form of the straight Timoshenko beam theory, where shear is taken into account. Extend it to the case of dynamics, adding inertial forces.
+	
+	\item Write the strong form of the geometrically-exact beam theory (Cosserat rods).  Extend it to the case of dynamics, adding inertial forces.
+	
+	\item Write the strong form of the Kirchhoff-Love plate, where one assumes that segments normal to the mid-surface remain straight and normal to the mid-surface after deformation. Add the contribution of inertial forces. 
+	Write the strain-displacement relations to compute $\epsilon_{\alpha\beta}$ from the normal displacement field $u$, where $\alpha$ and $\beta$ can be either direction 1 or 2 of the plate, and show that $\epsilon_{\alpha 3}$ and $\epsilon_{33}$ are always null.
+	
+	\item Write the strong form of the Reissner-Mindlin plate, that extends the Kirchhoff-Love plate theory by taking into account also the effect of shear. Add the contribution of inertial forces.
+	
+\end{enumerate}
+
+}
+
+
+
+
 
 \newpage
 \section{Discretization}
 
 There are different ways to cast the previous infinite dimensional problems into finite dimensional problems that can be attacked with computational tools. Among the different strategies we mention the finite element method, the finite different method, the finite volume method, etc. In the following we will focus on the finite element Galerkin method.
+
+Deeper insights on the finite element method can be found in the books of the authors that pioneered it, such as \cite{zienkiewiczFEA1977,tjrhughes87,bathe1982,wriggers2006} to name a few.
+
 
 \subsection{Function spaces}
 
@@ -1741,6 +1808,7 @@ In the following we see that most of the PDE problems seen in the previous secti
 We remark in passing that, for symmetrical $\mathcal{B}(u,v)$, \eqref{eq:weakbl} is equivalent to a variational problem $u = \mathrm{argmin}_{u}I[u]$ with the functional $I[u]=\frac{1}{2}\mathcal{B}(u,u) - \mathcal{L}(u)$ representing some form of energy, and whose stationary condition is $\mathcal{B}(u,\partial u) - \mathcal{L}(\partial u) = 0$; note how in elasticity the $\partial u$ can be considered a virtual displacement, and this turns into the principle of virtual work. 
 
 
+
 \subsection{Discretization}
 
 Now, one can introduce an approximation of $u$ and $v$, to pass from an infinite-dimensional problem to a finite-dimensional problem that depends on a countable set of variables, hence more computer-friendly. 
@@ -1762,7 +1830,7 @@ Shape functions can be linear, quadratic, etc., depending on the finite element 
 
 This variational setting is attributed to W.Ritz\footnote{It is remarkable how many bright scientists attended the University of Göttingen.}
 and B.Gal{\"e}rkin\footnote{The pronounciation of {\"e} in russian sounds like \textit{yo}, so one should pronounce \textit{Galyorkin}, I do not why everyone spells it Gal\textit{e}rkin.}, hence the name \textbf{Galerkin} method. More in detail, if the same approximation space is used for both $u$ and $v$, this is sometimes referred as \textbf{Bubnov-Galerkin} method, and if a different approximation space is chosen for $v$, this is called \textbf{Petrov-Galerkin} method. 
-The modern mathematical setting and terminology for the finite element method is credited to R.Courant\footnote{It is remarkable how many bright scientist attended the University of Göttingen.}.
+The modern mathematical setting and terminology for the finite element method is credited to R.Courant\footnote{It is remarkable how many bright scientists attended the University of Göttingen.}.
 
 Using the discretization, the weak form can be written:
 \begin{align}
@@ -1937,6 +2005,24 @@ So far, we have seen how to translate a Poisson problem (stationary heat problem
 
 
 
+\subsection{Exercises}
+
+{
+\small
+
+\begin{enumerate}
+	
+	\item Implement the finite element for the Timoshenko beam theory in a 2D plane using Matlab or similar tools.  Assume a single beam aligned to the X axis, with N nodes each having $y$ displacement and $\theta$ rotation as degrees of freedom (hence no bar compression effects in the horizontal direction and no inclined beams for simplicity). Hint: the main task is implementing the procedure to compute the stiffness matrix. As a benchmark, simulate a cantilever with 100 finite elements: constrain the left end and apply a vertical force to the right end, and compare the end displacement to the displacement fo the analytical solution. Hint: use a single integration point in Gauss quadrature.
+	
+	\item Using the finite element above, perform the cantilever benchmark with increasing number of nodes up to n=256, starting from n=2 and each time doubling them. Plot the relative error using a logarithmic plot, and see how the result converges to the analytical solution with an almost straight line in the plot. Repeat this using two Gauss quadrature points per element, and see how the convergence gets worse and worse when the thickness/length slenderness ratio becomes smaller (the shear lock numerical phenomena are more evident in thin, long beams).	
+	
+	\item Implement the finite element for a 2D triangle, assuming linear displacements interpolated from the three corner displacements, and use it to study linear elasticity in 2D membranes. Hint: use triangle coordinates as auxiliary parametric coordinates, this will simplify shape functions. Hint: this will require a single integration point in the center, while for non-homogeneous materials (or if you want to implement quadratic triangles, with more than 3 nodes each) you can use more Gauss points, but the distribution of those points and their weights for the quadrature must be retrieved from special Gauss tables aimed at triangle quadratures.
+	
+\end{enumerate}
+
+}
+
+
 
 
 \newpage
@@ -1967,6 +2053,8 @@ There are different classes of solvers that can be used, each with benefits or d
 	\item Multigrid methods
 \end{itemize}
 In the following we briefly list the main solver types belonging to these classes.
+
+For additional details on numerical methods for large scale linear systems, we suggest the interested reader to look at these textbooks: \cite{Saad2003,greenbaum1997}. Other references for the more specific topic of multigrid methods can be, for instance, \cite{brandt2011multigrid,trottenberg2000multigrid}.
 
 
 \subsection{Direct methods}
@@ -2222,6 +2310,28 @@ and \textit{algebraic multigrid} - requiring a complex implementation, especiall
 
 
 
+\subsection{Exercises}
+
+{
+\small
+
+\begin{enumerate}
+	
+	\item Implement the LDLt decomposition using Matlab or similar software tools. Try it with a singular $A$ matrix: what causes the breakup of the method? 
+	
+	\item Implement the MINRES Krylov method using Matlab or similar software tools. Test it with randomly generated symmetric matrices. Generate a nearly singular matrix and plot the convergence. 
+	
+	\item Implement the preconditioned CG Krylov method using Matlab or similar software tools. Test it on random symmetric matrices using a diagonal preconditioner and later using an ILU preconditioner (you can reuse the ILU code in Matlab to avoid implementing the ILU) and show which is converging faster.
+	
+	\item Use a Krylov solver from the Matlab toolkit to solve randomly generated \textit{sparse} linear systems (or better a linear system generated from a FEA problem). Add the ILU preconditioner and see how the convergence improves. Force the ILU to exploit symmetry if any. Plot the convergence of the preconditioned Krylov method for decreasing ILU tolerance to fills-in creation, up to the case where ILU is forced to create no fills-in at all.
+	
+	
+\end{enumerate}
+
+}
+
+
+
 \newpage
 \section{Time integration}
 
@@ -2234,6 +2344,8 @@ methods (aka time steppers) which fit better some cases or others.
 Here we cannot present all of them, but we briefly 
 discuss relevant aspects: the interested reader can find additional details in literature.
 
+Classical textbooks about ODE time integration are \cite{hawa93,hawa96}. Further details on DAE time stepping schemes can be found in \cite{aspe98}.
+The quite advanced topic of DVIs and MDIs can be approached using sources like \cite{pastew03dvi,pfeifferGlocker1996,acary2008numerical}.
 
 
 \subsection{Classes of time-dependent problems}
@@ -2462,7 +2574,7 @@ Focusing on ODEs only, for the moment, we can introduce some taxonomies of metho
 \begin{itemize}
 
 \item
-We can distinguish between \textbf{multistep} and \textbf{Runge\footnote{It is remarkable how many bright scientist attended the University of Göttingen.}-Kutta} methods.
+We can distinguish between \textbf{multistep} and \textbf{Runge\footnote{It is remarkable how many bright scientists attended the University of Göttingen.}-Kutta} methods.
 The former depends on a history of previous timesteps in order to extrapolate a new one at the end of the new step, whereas the latter starts from the last timestep information then computes temporary intermediate $\vect{f}_j \left( \vect{x}_j, t\right)$ values after it, in order to compute the value at the end of the step.
 
 \item
@@ -2586,23 +2698,23 @@ This is an example from the class of multistep methods. As for all multisteps me
 
 Recycling the information of previous time steps will help the precision with low computational cost - consider that Runge-Kutta methods achieve accuracy at the cost of computing intermediate time steps that are discarded. However it also leads to some issues, one being the fact that they require some tricks in starting them from scratch, when previous time history is not given.
 
-The Adams-Bashforth methods of order $s$ are explicit linear multistep methods given by the general formula:
+The Adams-Bashforth methods of order $s$ are explicit methods given by the general linear multistep formula:
 \begin{fleqn}
 \begin{align}
 \left[
 \begin{aligned}
-\sum_{j=0}^s a_j \vect{x}_{n+j} &= h\sum_{j=0}^s b_j \vect{f}(t_{n+j},\vect{y}_{n+j}) \\
+\sum_{j=0}^s a_j \vect{x}_{n+j} &= h\sum_{j=0}^s b_j \vect{f}(t_{n+j},\vect{x}_{n+j}) \\
 t_{n+1} &= t_n + h 
 \end{aligned}
 \right.
 \end{align}
 \end{fleqn}
-where one has $a_s=-1$, $a_j=0$ for $j<s$, and $b_j$ coefficients are given by a Lagrange polynomial interpolation hence $b_{s-j-1} = \frac{(-1)^j}{j!(s-j-1)!} \int_0^1 \prod_{i=0 \atop i\ne j}^{s-1} (u+i) \,du, \qquad \text{for } j=0,\ldots,s-1$; for example the 4-th order Adams-Bashforth boils down to 
+where one has $a_s=-1$, $a_j=0$ for $j<s$, and $b_j$ coefficients are given by a Lagrange polynomial interpolation hence $b_{s-j-1} = \frac{(-1)^j}{j!(s-j-1)!} \int_0^1 \prod_{i=0 \atop i\ne j}^{s-1} (u+i) \,du, \qquad \text{for } j=0,\ldots,s-1$, since the method is explicit $b_s=0$; for example the 4-th order Adams-Bashforth boils down to 
 \begin{fleqn}
 \begin{align}
 \left[
 \begin{aligned}
-\vect{x}_{n+4} &= \vect{x}_{n+3} + h\left( \frac{55}{24} \vect{f}(t_{n+3}, y_{n+3}) - \frac{59}{24} \vect{f}(t_{n+2}, y_{n+2}) + \frac{37}{24} \vect{f}(t_{n+1}, y_{n+1}) - \frac{9}{24} \vect{f}(t_n, y_n) \right) \\
+\vect{x}_{n+4} &= \vect{x}_{n+3} + h\left( \frac{55}{24} \vect{f}(t_{n+3}, \vect{x}_{n+3}) - \frac{59}{24} \vect{f}(t_{n+2}, \vect{x}_{n+2}) + \frac{37}{24} \vect{f}(t_{n+1}, \vect{x}_{n+1}) - \frac{9}{24} \vect{f}(t_n, \vect{x}_n) \right) \\
 t_{n+1} &= t_n + h 
 \end{aligned}
 \right.
@@ -3622,10 +3734,34 @@ We refer the reader for more details on this subject, here we just recall basic 
 	
 \end{itemize}
 
+\subsection{Exercises}
+
+{
+\small
+
+\begin{enumerate}
+	
+	\item Implement the Runge-Kutta 4th order scheme using Matlab or similar softare tools, and use it to simulate the time integral of a horizontal linear spring-dashpot system attached to a mass, where the parameters are: stiffness $k=1000$Nm, damping  $c=30$Nm/s, mass $m=2$kg. The initial conditions are: $x=0.2$m, $v=0.5$m/s. Test it with increasing time steps $h$ starting from $h=0.002$s and see how precision and stability is affected. 
+	
+	\item Implement an implicit Euler scheme using Matlab or similar softare tools, and use it to simulate the time integral of a horizontal non-linear spring-dashpot system attached to a mass, where the parameters are: stiffness $k=1000$Nm when $x>0$, $k=100000$Nm when $x\leq0$, damping  $c=30$Nm/s, mass $m=2$kg. The initial conditions are: $x=0.2$m, $v=0.5$m/s. Test it with increasing time steps $h$ starting from $h=0.002$s and see how precision and stability is affected. How does the explicit Euler scheme behaves for the same time steps?
+	
+	\item A pendulum of length $L=1$m has a disc connected at the lower end, with mass $M=2$kg and inertia $J=0.1$kgm$^2$. The gravitational field is $g=-9.8$ms$^{-2}$ Write the equations of motion as an ODE, with a single generalized coordinate $\theta$ expressing the rotation, and simulate it with an explicit Euler scheme using Matlab or similar tools, from initial conditions $\theta=0.1$rad, $\dot{\theta}=0$rad/s. 
+	
+	\item For the pendulum of the previous exercise, write the equations of motion as an index-2 DAE, using body coordinates $x,y,\theta$ and unknown reactions in the revolute joint, $\lambda_x, \lambda_y$. How to compute consistent initial values $x_0,y_0,\theta_0, \lambda_{x0},\lambda_{y0}$ from the initial conditions $\theta=0.1$rad, $\dot{\theta}=0$rad/s?
+	
+	\item For the DAE of the previous exercise, implement a solver using the \textit{implicit Euler for DAE} method presented in this paper, and simulate it. Compare the results to the same pendulum expressed as an ODE and simulated with an explicit Euler scheme. How are the computational times of the DAE solver compared to the ODE solver in this case?
+	
+	
+\end{enumerate}
+
+}
+
+
+\printbibliography
 
 
 %%%%%%%%%Bibliography%%%%%%%%
-\bibliographystyle{plain}
+%\bibliographystyle{plain}
 
 %\bibliography{../../../Papers/BibFiles/LaTeXrelated/BibMBS}
 

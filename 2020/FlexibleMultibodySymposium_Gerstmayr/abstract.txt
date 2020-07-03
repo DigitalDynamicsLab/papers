@@ -1,0 +1,7 @@
+Flexible multi-body dynamics of Cosserat rods with IGA formulation.
+
+Alessandro Tasora, Simone Benatti, Dario Mangoni
+Department of Engineering and Architecture, University of Parma, Italy
+
+ABSTRACT
+The Cosserat rod theory is at the basis of formulations for geometrically exact beams. On the ground of this approach, beams can be subject to arbitrarily large displacements and rotations, and very generic constitutive relations can be introduced to compute a sectional six-dimensional wrench from information of shear, extension, curvature and torsion of the centerline. We develop a Cosserat rod model based on the Isogeometric Analysis (IGA) theory, where spans of B-Spline NURBS are used as finite elements; in our formulation quaternions are used as rotational coordinates. The IGA approach leads to some benefits, for example high continuity between elements and ease of conversion from CAD systems. We implemented the model in the ProjectChrono open-source multibody simulation software and we developed a system that allows a modular definition of complex sections, including cases with eccentric mass, non-uniform elasticity, structural damping and plasticity. Moreover, beams can have initial curvature and variable section. The aforementioned features make the model suitable for simulating aeroelastic problems like rotor blades in helicopters and wind turbines. We provide benchmarks where the IGA Cosserat rod model is used in conjunction with constraints, rigid bodies, user-defined loads and motors, and we compare it with other models.

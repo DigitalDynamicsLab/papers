@@ -1,0 +1,212 @@
+\chapter{Definizione e Proprietà dei metodi} \label{chap:cauchy}
+\section{Definizione del problema di Cauchy}
+Risolvere problemi di dinamica vincolata richiede di risolvere un sistema di equazioni differenziali-algebriche (DAE, \emph{Differential-Algebraic Equations}). La soluzione delle equazioni differenziali-algebriche passa per la soluzione delle equazioni differenziali ordinarie (ODE, \emph{Ordinary Differential Equation})
+Il problema di Cauchy ai valori iniziali consiste un problema della forma:\newline
+trovare $y(t)\in C^1(I)$ t.c. :
+\begin{equation}  \label{eq:cauchy_def}  \begin{cases}
+y'(t) = f(t, y(t)) \qquad  t\in I \\
+y(t_0) = y_0 
+\end{cases}
+\end{equation}
+La seconda equazione del sistema, ovvero il valore assunto dalla soluzione $y(t)$ in un dato istante $t_0$, è la condizione necessaria per l'unicità della soluzione, infatti Un’equazione differenziale ordinaria ammette in generale infinite soluzioni. Per fissarne una è necessario imporre una condizione che prescriva il valore assunto dalla soluzione in un punto dell'intervallo di integrazione.
+La funzione \emph{f(t, y(t))} è assegnata e continua in entrambe le variabili nella striscia $ S = I \times (- \infty , + \infty)$. \newline
+\textbf{Osservazione} se f continua in t, integrando \ref{eq:cauchy_def} si ottiene:
+\begin{equation} \label{eq:cauchy_integral_equivalence}
+y(t) - y_0 = \int^t_{t_0} y'(\tau)d\tau = \int^t_{t_0}f(\tau,y(\tau)) d\tau \end{equation}
+L'equivalenza tra problema di Cauchy ed equazione integrala sarà sfruttata in seguito. \newline
+\textbf{Nota:} in questa prima parte su tratteranno equazioni differenziali scalari, in seguito verrà esteso quanto riportato al caso di equazioni vettoriali.
+%\paragraph{Esistenza ed unicità}
+%\paragraph{Stabilità del problema}
+\section{Metodi ad un passo} 
+Nel seguito si introdurranno metodi numerici per la soluzione del problema di Cauchy. La simbologia utilizzata è la seguente: \begin{itemize}
+    \item  $T \in \mathbb{R}_0^+ $ : Intervallo di integrazione da cui $ I = (t_0, t_0+T)$
+    \item $h>0$ : ampiezza dei sottointervalli (detta \emph{passo di discretizzazione} o \emph{timestep})  
+    \item $  t_n = t_0+nh; \quad n = 0,1,2... N_h$ la successione di nodi che discretizza I. Ovviamente $t_{N_h} \leq t_0+T$. \newline
+\end{itemize}{}
+\begin{definition} [Metodo single step] \label{def:single_step} 
+Un metodo numerico per l'approssimazione del problema \ref{eq:cauchy_def}si definisce \emph{ad un passo} o \emph{single step} se $u_{n+1}$ dipende solo da $u_n$. In caso contrario si parla di metodi a più passi o \emph{multistep}.\end{definition}
+\begin{definition} [Metodi impliciti ed espliciti]
+Un metodo è detto \emph{esplicito} se $u_{n+1}$ non dipende da valori successivi a $t_n$. In caso contrario, ossia se $u_{n+1}$ dipende implicitamente da sé stesso tramite $f$ il metodo è \emph{implicito} \end{definition}
+\paragraph{Metodo di Eulero in avanti (Eulero esplicito, Forward Euler)}
+\begin{equation} \label{eq:Eul_Forw}
+    u_{n+1} = u_n + h f_n
+\end{equation}
+\paragraph{Metodo di Eulero all'indietro (Eulero implicito, Backward Euler)}
+\begin{equation}
+    u_{n+1} = u_n + h f_{n+1}
+\end{equation}
+In entrambi i metodi di Eulero la derivata prima di $y$ con il rapporto incrementale ed entrambe la approssimazioni alle differenze finite di y sono accurate al primo ordine.
+\paragraph{Metodo di Crank-Nicholson (del trapezio)}
+\begin{equation}
+    u_{n+1} = u_n + \frac{h}{2} \left[f_n+f_{n+1}\right]
+\end{equation}
+\paragraph{Metodo di Heun}
+\begin{equation}
+    u_{n+1} = u_n + \frac{h}{2} \left[f_n+f(t_{n+1},u_n,hf_n)\right]
+\end{equation}
+
+% \subsubsection{Metodi di Runge-Kutta}
+% I metodi Runge-Kutta (RK) per aumentare l'accuratezza si avvalgono di molteplici valutazioni funzionali ad ogni passo. Questa strategia sacrifica la linearità e complica la valutazione dell'errore locale.
+% In generale un metodo RK può essere scritto come 
+% \begin{equation} \label{eq:RK_method_generalA}
+%     u_{n+1} = u_n + hF(t_n, u_n, h; f), \qquad n\geq 0
+% \end{equation}
+% Dove $F$ è la \emph{funzione di incremento}:
+% \begin{align} \label{eq:RK_method_generalB}
+%     &F(t_n, u_n, h; f) = \sum_{i=1}^s b_i K_i \\  \label{eq:RK_method_generalC}
+%     &K_i = f\left(t_n+c_i h, u_n + h \sum_{j=1}^s a_{ij}K_j\right), \qquad i = 1,2... s
+% \end{align}
+% In \ref{eq:RK_method_generalB} e \ref{eq:RK_method_generalC} \emph{s} indica il numero di stadi del metodo, mentre i coefficienti $\{a_{ij}\} \{c_i\} \{b_i\}$ definiscono completamente un metodo RK. 
+% Per praticità è uso comune raccogliere i coefficienti nella \emph{matrice di Butcher}:
+% \begin{equation}
+% \begin{array}{c|cccc}
+% c_1 & a_{11} & a_{12} & \hdots & a_{1s} \\
+% c_2 & a_{21} & a_{22} & \hdots & a_{2s} \\
+% \vdots & \vdots & \quad & \ddots & \vdots \\
+% c_s & a_{s1} & a_{s2} & \hdots & a_{ss} \\  \hline
+% \quad & b_1 & b_2 & \hdots & b_s \\
+% \end{array}
+% \end{equation}
+% Appare evidente dalla \ref{eq:RK_method_generalC} che $K_i$ può essere calcolato esplicitamente solo se $a_{ij} = 0 \forall j \geq i$, e si parlerà in questo caso di \emph{schemi espliciti}. Alternativamente si parla di schemi \emph{impliciti e semi-impliciti} ma questi ultimi non verranno trattati.
+
+\section{Metodi numerici e proprietà}
+
+Nel seguito si indicherà con $u_j$ la soluzione approssimata nel nodo $t_j$ della soluzione esatta $y(t_j)$ o, brevemente, $y_j$. \newline
+Allo stesso modo $f(t_j, u_j) = f_j$. Infine, poiché all'istante iniziale si dispone della soluzione esatta, $u_0 = y_0$.
+
+Seconda lo definizione \ref{def:single_step} un metodo \textit{single step} può essere definito in generale come:
+\begin{equation}\label{eq:Single_Step}
+    u_{n+1} = u_n + \Phi(t_n , h, u_n , u_{n+1} ; f)
+\end{equation}
+la funzione $\Phi$ è detta \emph{funzione di incremento}, e definisce il valore assunto dall'approssimazione in $t_{n+1}$.
+\paragraph{Errore di troncamento}
+\begin{itemize}
+\item Errore di troncamento locale: \newline
+
+\begin{align} \label{eq:local_trunc_err} \nonumber
+u_{n+1} &= u_n + h\Phi(t_n, u_n,f_n;h), \qquad 0\leq n \leq N_h - 1 , \qquad u_0 = y_0 \\
+\nonumber y_{n+1} &= y_n + h\Phi(t_n, y_n,f_n;h) +\epsilon_{n+1} , \\ \Rightarrow
+\epsilon_{n+1} &= h \tau_{n+1}(h) 
+\end{align}
+Dove $\epsilon_{+1}$ e $\tau_{n+1}$ sono il \emph{residuo} e l'\emph{errore di troncamento locale} nel nodo $t_{n+1}$.
+\item Errore di troncamento globale \newline 
+Si definisce \emph{errore di troncamento globale}  la quantità:
+\begin{equation} \label{eq:glob_trunc_err}
+\tau(h) = \underset{0 \leq n \leq N_{h-1}}{max} \left|\tau_{n+1}(h) \right|
+\end{equation}
+\end{itemize}
+\paragraph{Consistenza}
+Un metodo numerico ad un passo è completamente caratterizzato dalla funzione di incremento $\Phi$. Inoltre: 
+\begin{equation} \label{eq:incr_limit}
+\underset{h\rightarrow 0}{lim} (\Phi(t_n,y_nf(t_n,y_n);h)=f(t_n, y_n),\quad \forall t_n \geq t_0
+\end{equation}
+Da \ref{eq:incr_limit} e considerando che $y_{n+1}-y_n = hy'(t_n) + \mathcal{O}(h^2)$ si ha che
+\begin{equation} \label{eq:consistenza}
+\underset{h\rightarrow 0}{lim }(\tau(h)) = 0
+\end{equation}
+Questa proprietà esprime la consistenza del metodo numerico con il problema di Cauchy.
+
+\paragraph{Zero stabilità}
+Un metodo numerico è \emph{zero-stabile} se: \[\exists \quad
+h_0, C, \epsilon_0 >0 \quad|\quad \forall h\in (0, h_0], \quad \epsilon \in (0, \epsilon_0], \quad 0\leq n \leq N_h \Rightarrow \] 
+\begin{equation} \label{eq:zerostab} \left|z_n^{(h)}-u_n^{(h)} \right|\leq C\epsilon \end{equation}
+Con \[\begin{cases}
+z_{n+1}^{(h)}&=z_n^{(h)} + h\left[ \Phi (t_n, z_n^{(h)}, f(t_n, z_n^{(h)});h) + \delta_{n+1} \right] \quad n=0..N_{h-1}
+\\ z_0^{(h)}&= y_0 + \delta_0 
+\end{cases} \]\[ \begin{cases}
+u_{n+1}^{(h)}&=u_n^{(h)} + h\Phi (t_n, u_n^{(h)}, f(t_n, u_n^{(h)});h) \quad n=0..N_{h-1}
+\\ u_0^{(h)}&= y_0 + \delta_0  \end{cases} \]
+La zero stabilità richiede che valga \ref{eq:zerostab} in un intervallo limitato $\forall h\leq h_0$. Questa proprietà è relativa al metodo, non al problema. 
+\begin{theorem}[Zero Stabilità] \label{teo:zerostab}
+Si consideri un metodo numerico ad un passo per la soluzione del problema di Cauchy. Se la funzione di incremento $\Phi(t_n, u_n,f_n;h)$ è lipschitziana di costante $\Lambda$ rispetto al secondo argomento, uniformemente rispetto ad h e a $t_j \in [t_o, t_0 +T]$ allora il metodo è zero-stabile.  \cite{Quarteroni} \end{theorem}
+\paragraph{Convergenza}
+Un metodo è \emph{convergente} se: \begin{equation} \label{eq:def_convergenza}
+\forall \quad n = 0,1,2....,N_h \qquad \left| u_n - y_n \right| \leq C(h)\end{equation}
+$C(h)$ è un infinitesimo di $h$. 
+Il metodo di dice \emph{convergente di ordine p} se $C(h) = \mathcal{O}(h^p)$ cioè se $\exists C>0 t.c. C(h) \leq Ch^p \forall h>0$ con $p$ massimo.
+\begin{theorem}[Convergenza] \label{teo:converg}
+Nelle ipotesi del teorema \ref{teo:zerostab}, per il lemma di Gronwall: \begin{equation}
+\left|y_n - u_n\right| \leq \left(\left|y_0-u_0\right| + nh\tau(h)\right)e^{nh\tau}, \qquad 1\leq n\leq 
+N_h \end{equation} 
+Se vale l'ipotesi di consistenza \ref{eq:consistenza} ed $|y_0-u_0| \rightarrow 0$ per $h\rightarrow 0$ il metodo è convergente.Se $|y_0-u_0| = \mathcal{0}(h^p)$ ed il metodo ha ordine p, allora converge con ordine p \end{theorem}
+\textbf{Lemma di Gronwall} \newline
+Siano $k_n, \phi_n$ successioni (la prima non-negativa) tali che: \begin{equation}\begin{dcases}
+\phi_0 \leq g_0 \\ \phi_n \leq g_0 + \sum_{s=0}^{n-1}p_s + \sum_{s=0}^{n-1}k_s\phi_s \qquad n\geq 1
+\end{dcases} \end{equation}
+Se $g_0, p_n \geq 0 \forall n \geq 0$ allora:
+\begin{equation}
+\phi_n \leq \left( g_0 + \sum_{s=0}^{n-1}p_s  \right)
+exp \left(\sum_{s=0}^{n-1}k_s \right)
+\end{equation}
+Si osserva quindi che un metodo (single step) consistente e zero-stabile è necessariamente convergente. Questa proprietà è chiamata \emph{teorema di Lax-Richtmyer o di equivalenza} ed è di estrema rilevanza nell'analisi numerica.
+
+
+\paragraph{Assoluta stabilità}
+L'assoluta stabilità è una proprietà che riguarda il comportamento asintotico del metodo. Un metodo si dice assolutamente stabile se, con $h$ fissato, $u_n$ è limitata per $t_n\rightarrow +\infty$.
+
+Si definisce un \emph{problema modello}
+\begin{equation}\label{eq:model_cauchyprob}
+    \begin{cases} y'(t) = \lambda y(t) \qquad t>0 \\ y(0) = 1 \end{cases} \end{equation}
+La soluzione di \ref{eq:model_cauchyprob} è $y = e^{ \lambda t}$, inoltre se $\mathcal{R}(\lambda)<0$, $u_n\rightarrow 0$
+% \subsubsection{Proprietà dei metodi di Runge-Kutta}
+% \paragraph{Consistenza}
+% Si definisce l'errore di troncamento locale a partire dalla formula del residuo:
+% \begin{equation}
+%     h \tau_{n+1}(h) = y_{n+1} - y_n -hF(t_n, y_n, h; f)
+% \end{equation}
+% Si verifica che il metodo è consistente, ossia $\tau(h) = max_n|\tau_n(h)| \rightarrow 0$ per $h\rightarrow 0$, se e solo se:
+% \begin{equation}
+%     \sum_{i=1}^s b_i = 1
+% \end{equation}
+% \paragraph{Convergenza}
+% Trattandosi di un metodo single step, per il teorema \ref{teo:converg} la consistenza implica la convergenza, pertanto avrà le medesime condizioni.
+
+\subsection{Proprietà dei metodi}
+\begin{definition} [Assoluta Stabilità]
+Un metodo è assolutamente stabile se l'approssimazione della soluzione di \ref{eq:model_cauchyprob}
+\begin{equation} \label{eq:abs_stab}
+    |u_n| \rightarrow 0 \qquad \text{per} \qquad t_n \rightarrow +\infty
+\end{equation}
+\end{definition}
+
+Si definisce \emph{problema di Cauchy lineare} o \emph{problema modello}
+\begin{equation}  \label{eq:cauchy_def}  \begin{cases}
+y'(t) = \lambda y(t) \qquad  t > 0 \\
+y(t_0) = 1 
+\end{cases}
+\end{equation}
+
+Dq questa definizione si può inoltre definire \emph{regione di assoluta stabilità} del metodo il sottoinsieme di $\mathbb{C}$ 
+\begin{equation}
+    \mathbb{A} = \{ z=h\lambda \in \mathbb{C} \qquad \text{t.c. \ref{eq:abs_stab} è soddisfatta} \}
+\end{equation}
+\begin{definition}[Metodi A-stabili e condizionatamente stabili]
+Un metodo è detto \emph{A-stabile} se $\mathcal{A} \cap \mathbb{C}^- = \mathbb{C}^-$ ovvero se \ref{eq:abs_stab} è soddisfatta $\forall\lambda\in \mathbb{C}^-$ incondizionatamente rispetto ad $h$, mentre qualora siano richiesta condizioni su h sono condizionatamente stabili. 
+I metodi $\theta$ stabili, invece, sono metodi Multistep per i quali A contiene la regione angolare definita dagli $z \in \mathcal{C}$ tali che $-\theta < \pi - arg(z) < \theta$ con $\theta \in  (0, \pi/2)$.
+\end{definition}
+\begin{theorem}[Prima Barriera di Dahlquist]
+Non esistono metodi multistep lineari zero-stabili a q-passi con ordine maggiore di q + 1 se q è dispari, q + 2 se q è pari.
+\end{theorem}
+\begin{theorem}[Seconda Barriera di Dahlquist]\label{theo:DahlquistII}
+Un metodo multistep lineare esplicito non può essere né A-stabile, né $\theta$-stabile. Inoltre, non esistono metodi multistep lineari A-stabili di ordine superiore a due. Per ogni
+$\theta \in (0, \pi/2)$ esiste almeno un metodo multistep lineare $\theta$-stabile a q passi di
+ordine q solo per q = 3 e q = 4.
+\end{theorem}
+Le barriere di Dahlquist limitano allo stesso modo i metodi ad un passo, considerabili come casi di metodi multistep con $n=1$.
+
+
+\section{Sistemi di equazioni}
+Il sistema di ODE del primo ordine:
+\begin{equation}
+ \avect{y}' = \amatr{F}(t, \avect{y})
+\end{equation}
+Con $\avect{y}\in \mathbb{R}^n$ vettore soluzione e $\amatr{F}:\mathbb{R} \times \mathbb{R}^n \rightarrow \mathbb{R}^n$. La soluzione dipende sempre dal valore iniziale che in questo caso è un vettore di $n$ elementi $\avect{y}_0 \in \mathbb{R}^n$.
+\paragraph{Lipschitzianità ed esistenza della soluzione}
+Se $\amatr{F} è Lipschitziana $ ossia se , essendo continua su $D = [t_0,T]\times \mathbb{R}^n$, con $t_o, T$ finiti esiste $L$ tale che:
+\begin{equation}
+    \norm{\amatr{F}(t,\avect{y}) - \amatr{F}(t,\overline{\avect{y}})} \leq L \norm{\avect{y}- \overline{\avect{y}}}
+\end{equation}
+per ogni $(t, \avect{y}), (t, \overline{\avect{y}}) \in D$; si dimostra che esiste ed è unica la soluzione $\avect{y}$  continua in $D$ del problema \ref{eq:cauchy_def}.
+
+
+Per quanto riguarda le soluzioni numeriche del detto problema i metodi visti (e quelli riportati in seguito) sono estendibili al caso di sistemi di equazioni. 

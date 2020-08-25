@@ -1,0 +1,155 @@
+
+\chapter{Formula di Lagrange}
+\label{Formula di Lagrange} 
+%\textbf{Nota:} Per facilitare la lettura in seguito si userà il grassetto per le quantità vettoriali mentre l'overline indicherà che le coordinate in questione sono relative. \newline
+\section{Lavoro Virtuale}
+Un passaggio essenziale nella formulazione lagrangiana delle equazioni della dinamica del sistema multibody è il calcolo delle forze generalizzate associate con le forze generalizzate del sistema.
+In questa sezione le forze generalizzate sono introdotte applicando il principio dei lavori virtuali nei casi statico e dinamico. Nello svolgimento in seguito si considera un sistema di particelle.
+Assumendo che un corpo rigido non è altro che un grande numero di particelle queste espressioni saranno estese ai corpi rigidi con poche modifiche.
+\paragraph{Equilibrio Statico}
+Si consideri un sistema composto da $n_p$ particelle. Se il sistema di particelle è in equilibrio significa che 
+\begin{equation}
+\label{eq:equilibrium_virtualwork}
+\mathbf{ \sum_{i=1}^{n_p} F^i \delta r^i }=  0
+\end{equation}
+Dove F ed r sono la forza agente e lo spostamento virtuale relativi ad un particella i. La forze sono di 2 tipi: forze esterne e forze di vincolo: 
+$F^i_e +F^i_c = F^i$ ed applicando questa suddivisione all'equazione \ref{eq:equilibrium_virtualwork} si ottiene:
+\[\sum_{i=1}^{n_p}F^i\delta r^i = 0 \Rightarrow \sum_{i=1}^{n_p}F_e^i\delta r^i + \sum_{i=1}^{n_p}F_c^i\delta r^i = 0 \Rightarrow \delta W_e + \delta W_c = 0 \]
+Lo spostamento di ogni particella è funzione delle coordinate del sistema $q= (q_1, q_2,\quad ... \quad q_n)$.
+\[r_i = r_i(q_1, q_2,\quad ... \quad q_n) \Rightarrow \delta r_i = 
+\frac{\partial r_i}{\partial q_1}\delta q_1 + \frac{\partial r_i}{\partial q_2}\delta q_2 + \frac{\partial r_i}{\partial q_3}\delta q_3 + .... + \frac{\partial r_i}{\partial q_n}\delta q_n \]
+Si consideri il caso in cui i vincoli non compiono lavoro (\emph{workless constraints}), ad esempio quando i vincoli non hanno attrito (o la forza di attrito viene inserita fra le forze esterne). In questo caso il lavoro virtuale è dovuto alle sole forze esterne: \begin{equation}
+\delta W = \delta W _e = 
+\sum_{i=1}^{n_p}\left( F_e^i \sum_{j=1}^n \frac{\partial r_i}{\partial q_j}\delta q_j \right) = 0
+\end{equation}
+Si definisce $Q_j$ come: \begin{equation}
+Q_j = \sum_{i=1}^n F_e^i \frac{\partial r_i}{\partial q_j} = \sum_{i=1}^n \left(F_e^i\right)^T r^i_{q_j} \qquad \left( r^i_{q_j}=\frac{\partial r_i}{\partial q_j} \right)
+\end{equation}
+Per cui si ottiene: \begin{equation}
+\delta W = \delta W_e = \sum_{j=1}^n Q_j\delta q_j = Q^T \delta q = 0
+\end{equation}
+Con \begin{equation}
+Q = \left[Q_1, Q_2 , .... , Q_n\right]^T
+\end{equation}
+Vettore delle forze generalizzate.
+
+\paragraph{Equilibrio dinamico, Principio di D'Alembert}
+La seconda legge di Newton afferma che: \begin{equation}
+\label{eq:newton_law}
+F^i = \dot{P}^i \qquad o \qquad F^i - \dot{P}^i = 0
+\end{equation}
+Con F risultante delle forze e P quantità di moto agenti sulla generica particella i. 
+Da \ref{eq:newton_law} esplicitando il lavoro virtuale di un sistema di particelle in equilibrio dinamico si 
+ottiene il \emph{principio di D'Alembert}
+\begin{gather} 
+\label{eq:dalembert_principle}
+\sum_{i=1}^{n_p} (F_e^i + F_c^i -\dot{P}^i )\delta r^i = \sum_{i=1}^{n_p} (F_e^i -\dot{P}^i )\delta r^i + \sum_{i=1}^{n_p} F_c^i\delta r^i = 0 \nonumber \\ \underset{workless constraints}{\Rightarrow} \sum_{i=1}^{n_p} (F_e^i -\dot{P}^i )\delta r^i = 0 \nonumber \\ \Rightarrow \sum_{i=1}^{n_p} (F_e^i -\dot{P}^i )\sum_{j=1}^n \frac{\partial r_i}{\partial q_j} \delta q_j = 0
+\end{gather}
+
+Ridefinendo $Q_j$ nel caso dinamico comprendendo il contributo delle forze d'inerzia si ottiene:
+\begin{equation}
+Q_j = \sum_{i=1}^{n_p} \left(F_e^i-\dot{P}^i\right)\frac{\partial r^i}{\partial q_j}
+\end{equation}
+Da cui:
+\begin{equation}
+\sum_{j=1}^n \sum_{i=1}^{n_p} \left(F_e^i-\dot{P}^i\right)\frac{\partial r^i}{\partial q_j}\delta q_j = \sum_{j=1}^n Q_j \delta q_j = Q^T = 0
+\end{equation}
+\section{Dinamica Lagrangiana per particelle}
+Si introduce qui la formulazione lagrangiana della dinamica di un sistema di particelle che verrà in seguito estesa
+ai corpi rigidi.
+\subsection{Lavoro Virtuale su un sistema di particelle}
+\paragraph{Spostamento di una particella \emph{i}}
+Lo spostamento di una particella \emph{r} è funzione del sistema di coordinate \emph{q} e del tempo \emph{t}:
+\begin{equation}
+r^i = r^i\left(q_1, q_2, q_3 ... ,q_n, t\right)
+\end{equation}
+Da cui si ottiene, derivando a catena:
+\begin{align}
+\label{eq:particle_disp_time_der}
+\dot{r}^i = \frac{D r^i}{D t} & = \frac{\partial r^i}{\partial q_1}\dot{q_1} + \frac{\partial r^i}{\partial q_2}\dot{q_2}
++ ... + \frac{\partial r^i}{\partial q_n}\dot{q_n} + \frac{\partial r^i}{\partial t} \nonumber \\
+& = \sum_{j=1}^n \frac{\partial r^i}{\partial q_j}\dot{q_j} + \frac{\partial r^i}{\partial t}
+\end{align}
+Si osservi che la sommatoria è dovuta alla variazione delle coordinate della particella nel riferimento, mentre il secondo termine è la variazione di $r^i$ mantenendo $q_j$ fissato, per cui potremmo vedere i due termini come una velocità relativa ed una velocità di trascinamento di un punto rispetto ad un sistema di riferimento non inerziale. \newline
+Lo spostamento virtuale si può esprimere in funzione delle coordinate $q_j$ come:
+\begin{equation}
+\label{eq:particle_virtual_disp}
+\delta r^i = \sum_{j=1}^n\frac{\partial r^i}{\partial q_j}\delta q_j
+\end{equation}
+\paragraph{Lavoro su una particella \textit{i}}
+Dalla formula \ref{eq:particle_virtual_disp} per lo spostamento virtuale della particella si ottiene il lavoro virtuale della forza agente sulla particella 1\emph{i}:
+\begin{equation}
+\label{eq:virt_work_particle}
+{F^i}^T \delta r^i = \sum_{j=1}^n {F^i}^T \frac{\partial r^i}{\partial q_j}\delta q_j
+\end{equation}
+Estendendo l'equazione \ref{eq:virt_work_particle} al sistema di particelle:
+\begin{equation}
+\label{eq:virt_work_particlesyst}
+\sum_{i=1}^{n_p} {F^i}^T \delta r^i = \sum_{i=1}^{n_p}\sum_{j=1}^n {F^i}^T \frac{\partial r^i}{\partial q_j}\delta q_j = \sum_{j=1}^n Q_j \delta q_j
+\end{equation}
+Dove $Q_j$ è chiamato le \emph{componente delle forze generalizzate associato alla coordinata $q_j$} ed è:
+\begin{equation}
+Q_j = \sum_{i=1}^{n_p} {F^i}^T \frac{\partial r^i}{\partial q_j}
+\end{equation}
+\paragraph{Lavoro virtuale della forza di inerzia}
+Il lavoro virtuale di tutte le forze d'inerzia del sistema può essere scritto come somma dei lavori virtuali delle forze di inerzia agenti di ogni \emph{i}-esima particella di massa $m^i$:
+\begin{equation}
+\label{eq:inertia_vwork_particle}
+\delta W_i = \sum_{i=1}^{n_p}m^i\ddot{r}^i\cdot \frac{\partial r^i}{\partial q_j}\delta q_j 
+\end{equation}
+Un' utile identità:
+\[\sum_{i=1}^{n_p}\frac{d}{dt}\left(m^i\dot{r}^i\frac{\partial r^i}{\partial q_j}\right)
+ = \sum_{i=1}^{n_p} \left(m^i\ddot{r}^i\frac{\partial r^i}{\partial q_j}\right) +  \sum_{i=1}^{n_p} \frac{d}{dt} \left(m^i\dot{r}^i\frac{d}{dt}\frac{\partial r^i}{\partial q_j}\right) \]
+Da cui:
+\begin{equation}
+\label{eq:part_inertia_work_identity}
+\sum_{i=1}^{n_p}\left(m^i\ddot{r}^i\frac{\partial r^i}{\partial q_j}\right) 
+ = \sum_{i=1}^{n_p}\left[ \frac{d}{dt}\left(m^i\dot{r}^i\frac{\partial r^i}{\partial q_j}\right) - m^i\dot{r}^i\frac{d}{dt}\left(\frac{\partial r^i}{\partial q_j}\right) \right]
+\end{equation}
+Si ottiene grazie all'equazione \ref{eq:particle_disp_time_der}
+\begin{equation}
+\label{eq:drdot_dq}
+\frac{d}{dt}\left(\frac{\partial r^i}{\partial q_j}\right) = \sum_{k=1}^n \frac{\partial ^2 r^i}{\partial q_j\partial q_k}\delta \dot{q}_k + \frac{\partial ^2r^i}{\partial q_j\partial t} = \frac{\partial \dot{r}^i}{\partial q_j}
+\end{equation}
+Inoltre, sempre a partire dalla \ref{eq:particle_disp_time_der} e considerando la derivata parziale di $\dot{r}^i$ rispetto ad $q_j$:
+\begin{equation}
+\label{eq:drdot_dqdot}
+\frac{\partial\dot{r}^i}{\partial \dot{q}_j} = \frac{\partial r^i}{\partial q_j}
+\end{equation}
+Dall'identità \ref{eq:part_inertia_work_identity} si ottiene:
+\begin{align}
+& \sum_{i=1}^{n_p} \frac{d}{dt} \left(m^i\ddot{r}^i\frac{\partial r^i}{\partial q_j}\right) 
+ = \sum_{i=1}^{n_p}\left[ \frac{d}{dt}\left(m^i\dot{r}^i\frac{\partial r^i}{\partial q_j}\right) - m^i\dot{r}^i\frac{d}{dt}\left(\frac{\partial r^i}{\partial q_j}\right) \right]  \nonumber \\
+&= \sum_{i=1}^{n_p}\left\{\frac{d}{dt}\left[\frac{\partial}{\partial \dot{q}_j}\left(\frac{1}{2}m^i\dot{r^i}^T\dot{r}^i\right)\right] -\frac{\partial}{\partial q_j}\left(\frac{1}{2}m^i\dot{r^i}^T\dot{r}^i\right)\right\}
+\end{align}
+\subsection{Equazione di Lagrange}
+Denotando con $T^i$ l'energia cinetica della \emph{i}-esima particella:
+\begin{equation}
+\label{eq:part_kinenergy}
+T^i = \frac{1}{2}m^i\dot{r^i}^T\dot{r}^i
+\end{equation}
+E con \emph{T} l'energia totale del sistema:
+\[T = \sum_{i=1}^{n_p}t^i\]
+Si ottiene:
+\begin{align}
+\label{eq:part_inertia_j}
+\sum_{i=1}^{n_p} \left(m^i\ddot{r}^i\frac{\partial r^i}{\partial q_j}\right) 
+&= \sum_{i=1}^{n_p}\left\{\frac{d}{dt}\left[\frac{\partial}{\partial\dot{q}_j}(T^i)\right] -\frac{\partial T^i}{\partial q_j} \right\} \\
+&= \frac{d}{dt}\left(\frac{\partial T}{\partial\dot{q}_j}\right) - \frac{\partial T}{\partial q_j} 
+\end{align}
+Sostituendo \ref{eq:part_inertia_j} in \ref{eq:inertia_vwork_particle} ed applicandola al principio di D'Alembert (\ref{eq:dalembert_principle}
+si perviene alla \emph{Formula di Lagrange} :
+\begin{equation}
+\label{eq:lagrange_notind}
+\sum_j\left[ \frac{d}{dt}\left( \frac{\partial T}{\partial\dot{q}_j}\right) -\frac{\partial T}{\partial q_j} -Q_j \right] = 0
+\end{equation}
+Se le coordinate $q_j$ sono linearmente indipendenti si ha:
+\begin{equation}
+\label{eq:lagrange}
+\frac{d}{dt}\left( \frac{\partial T}{\partial\dot{q}_j}\right) -\frac{\partial T}{\partial q_j} -Q_j = 0 \qquad j = 1, 2, ... ,n
+\end{equation}
+Si può riscrivere la \ref{eq:lagrange_notind} (e conseguentemente la \ref{eq:lagrange}) in forma matriciale:
+\begin{equation} \label{eq:lagrange_matrix}
+\left[ \frac{d}{dt} \left(\frac{\partial T}{\partial \dot{q}} \right) - \frac{\partial T}{\partial q} - Q_e^T \right] \delta q = 0
+\end{equation}
+%

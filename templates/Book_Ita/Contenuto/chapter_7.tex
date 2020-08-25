@@ -1,0 +1,446 @@
+\chapter{Implementazione dei Timestepper in Chrono}
+
+% importante parlare di warm start (valori iniziali di Newton Raphson)
+
+%  gli Rold sono la parte dei residui (sistema G) che non cambia, relativo cioè allo stato precedente. Per questo vengono caricati fuori dal ciclo, sarebbe inefficiente ogni volta fornire gli stessi valori, In Newmark non ho termini relativi a old nel sistema (ma davvero?) pertanto non c'è questa fase
+
+%StateSolveCorrection serve per la soluzione di NR in schemi impliciti. è al termine di solveA. Di fatto risolve il sistema lineare dati residui e coefficienti
+
+%StateSolveA trova l'accelerazione in schemi espliciti 
+% da linea 60 a 75 calcolo numerico derivata SECONDA (in stato e tempo) di Q. 
+% D2Q = [ Q(s+1) + Q(s-1) - 2Q(s) ] /Dt^2
+%per calcolare i vari Q sposta lo stato di un delta e valuta il Q
+% load constraint applicato + volta somma gli argomenti
+% vedi sistema pag 
+
+
+\section{Risolvere il sistema lineare}
+Che si tratti di metodi espliciti o impliciti (e si debba iterare con Newton-Raphson), è sempre necessario passare per la risoluzione di un sistema lineare.
+Nel primo caso si risolverà, in un singolo passaggio, il sistema \ref{eq:dyn_sys}; nel secondo caso si dovrà risolvere ad ogni iterazione un sistema del tipo \ref{eq:eulforw_iterstep}.
+Nel caso specifico la funzione \emph{StateSolveCorrection}, riportata in seguito, è ottimizzata per risolvere  un sistema come \ref{eq:eulforw_iterstep}, che effettivamente deve essere risolto più volte per ogni timestep (una volta per ogni iterazione di Newton-Raphson). Si noti che:
+\begin{itemize}
+    \item Alcuni termini nel vettore dei termini noti (residui) sono riferiti dall'istante temporale $l$, per cui non variano durante le iterazioni. Ha quindi senso fornirli una sola volta ad ogni timestep.
+    \item La funzione invoca  il solutore di sistemi lineari scelto ed ottiene la soluzione. Esistono svariati algoritmi di soluzione (e ne sono implementati diversi in Chrono), tuttavia un'analisi più approfondita esula dagli scopi di questo testo.
+    \item La medesima funzione può essere utilizzata per gli schemi espliciti che utilizzano il sistema \ref{eq:dyn_sys}.
+\end{itemize}
+
+Si riporta il codice (C++) della funzione \textit{StateSolveCorrection}. Le porzioni relative alla diagnostica sono state omesse. 
+
+
+\noindent\rule{\textwidth}{1pt}\newline
+\begin{verbatim}
+bool ChSystem::StateSolveCorrection(// result: computed Dv
+                                    ChStateDelta& Dv,
+                                    // result: computed lagrangian multipliers
+                                    ChVectorDynamic<>& L,         
+                                    // the R residual
+                                    const ChVectorDynamic<>& R,
+                                    // the Qc residual
+                                    const ChVectorDynamic<>& Qc,  
+                                    // the factor in c_a*M
+                                    const double c_a,      
+                                    // the factor in c_v*dF/dv
+                                    const double c_v, 
+                                    // the factor in c_x*dF/dv
+                                    const double c_x,   
+                                    // current state, x part
+                                    const ChState& x,             
+                                    // current state, v part
+                                    const ChStateDelta& v,        
+                                    // current time T
+                                    const double T,               
+                                    // scatters state to the system
+                                    bool force_state_scatter,     
+                                    // calls the solver's Setup() function
+                                    bool force_setup              
+                                    ) {
+    CH_PROFILE( "StateSolveCorrection");
+
+    if (force_state_scatter)
+        StateScatter(x, v, T);
+
+    // R and Qc vectors  --> solver sparse solver structures  
+    //(also sets L and Dv to warmstart)
+    IntToDescriptor(0, Dv, R, 0, L, Qc);
+
+    // If the solver's Setup() must be called or if the solver's Solve() requires it,
+    // fill the sparse system structures with information in G and Cq.
+    if (force_setup || GetSolver()->SolveRequiresMatrix()) {
+        timer_jacobian.start();
+
+        // Cq  matrix
+        ConstraintsLoadJacobians();
+
+        // G matrix: M, K, R components
+        if (c_a || c_v || c_x)
+            KRMmatricesLoad(-c_x, -c_v, c_a);
+
+        // For ChVariable objects without a ChKblock, just use the 'a' coefficient
+        descriptor->SetMassFactor(c_a);
+
+        timer_jacobian.stop();
+    }
+
+
+    // If indicated, first perform a solver setup.
+    // Return 'false' if the setup phase fails.
+    if (force_setup) {
+        timer_setup.start();
+        bool success = GetSolver()->Setup(*descriptor);
+        timer_setup.stop();
+        setupcount++;
+        if (!success)
+            return false;
+    }
+
+    // Solve the problem
+    // The solution is scattered in the provided system descriptor
+    timer_solver.start();
+    GetSolver()->Solve(*descriptor);
+    timer_solver.stop();
+    
+
+    // Dv and L vectors  <-- sparse solver structures
+    IntFromDescriptor(0, Dv, 0, L);
+
+    solvecount++;
+
+    return true;
+}
+
+\end{verbatim}
+\noindent\rule{\textwidth}{1pt} \newline
+
+
+Argomenti della funzione:
+\begin{itemize}
+    \item In Dv ed L verranno salvati la variazione di velocità e di reazione vincolare calcolati
+    \item In R e Qc vengono utilizzati per passare al Solver il vettore de i residui $\avect{G}$ in \ref{eq:eulforw_iterstep}. In R si trovano i termini di  \ref{eq:eulforw_Gq} e \ref{eq:eulforw_Gv} mentre Qc corrisponde a  \ref{eq:eulforw_Glam}.
+    \item c\_a, c\_v e c\_x sono i coefficienti della matrice $\amatr{J}$ in \ref{eq:eulforw_iterstep}.
+    \item Con x, v e T si passa al Solver lo stato (posizione e velocità) ed il tempo corrente.
+    \item Infine 2 flag: la prima forza l'aggiornamento dello stato del sistema, mentre la seconda il setup del solver.
+\end{itemize}
+
+Si veda quindi in cosa consiste la funzione:
+\begin{itemize}
+    \item Se specificato, aggiorna lo stato
+    \item Passa le reference residui e risultati al descrittore del solver 
+    \item Passa al descrittore del solver la matrice dei coefficienti e dei vincoli
+    \item esegue il setup del solver
+    \item Il Solver risolve il sistema. Si noti che essendo il descrittore l'argomento della funzione Solve il Solver ha già sia i dati che le allocazioni di memoria dei risultati.
+    \item dopo aver aggiornato il descrittore e aumentato il contatore, la funzione restituisce \textit{true}, indicando la riuscita dell'operazione.
+\end{itemize}
+L'algoritmo di soluzione dipende dalla tipologia di Solver. La funzione GetSolver trova il Solver (che viene specificato nello script della simulazione) e gli fornisce i dati necessari a calcolare la soluzione. Come già accennato una descrizione più estesa di ciò che avviene nella funzione Solve esulerebbe dagli scopi di questo testo.
+
+Se invece si utilizza questa funzione per un sistema del tipo \ref{eq:dyn_sys} è sufficiente adottare semplici accorgimenti:
+\begin{itemize}
+    \item Dal momento che avrò come incognita $\delta\avect{v}/h$ invece di $\delta\avect{v}$ si dovrà semplicemente utilizzare il risultato coerentemente. Per il Solver, invece, non c'è alcuna differenza.
+    \item Per caricare i termini noti del primo sistema inserisco F come un residuo con coefficiente 1, e questo è l'unico termine.
+    \item Nella matrice dei coefficienti (argomenti si \textit{StateSolveCorrection)} il coefficiente di M sarà 1 (F=Ma), i restanti coefficienti saranno 0.
+    \item Si  $Q_d$ verrà calcolato numericamente (in seguito si vedrà come)
+\end{itemize}
+
+% \section{Implementazione del metodo di Eulero esplicito}
+% \subsection{Sistema lineare per metodi espliciti}
+% Come accennato in precedenza per risolvere il sistema \ref{eq:dyn_sys} si utilizza sempre \emph{StateSolveCorrection}, e per utilizzarla ottenendo direttamente il sistema si introduce la funzione \emph{StateSolveA}, ossia una funzione che risolve la dinamica con l'accelerazione come incognita.
+
+% \noindent\rule{\textwidth}{1pt} \newline
+% \begin{verbatim}
+%     bool ChIntegrableIIorder::StateSolveA(
+%                                       // result: computed a for a=dv/dt
+%                                       ChStateDelta& Dvdt,       
+%                                       // result: computed lagrangian 
+%                                       ChVectorDynamic<>& L,     
+%                                       // current state, x
+%                                       const ChState& x,         
+%                                       // current state, v
+%                                       const ChStateDelta& v,    
+%                                       // current time T
+%                                       const double T,           
+%                                       // timestep (if needed)
+%                                       const double dt,          
+%                                       // scatters state to the system
+%                                       bool force_state_scatter  
+%                                       ) {
+%     if (force_state_scatter)
+%         StateScatter(x, v, T);
+
+%     ChVectorDynamic<> R(GetNcoords_v());
+%     ChVectorDynamic<> Qc(GetNconstr());
+%     const double Delta = 1e-6;
+
+%     LoadResidual_F(R, 1.0);
+
+%     LoadConstraint_C(Qc, -2.0 / (Delta * Delta));
+
+%     // numerical differentiation to get the Qc term in constraints
+%     ChStateDelta dx(v);
+%     dx *= Delta;
+%     ChState xdx(x.GetRows(), this);
+
+%     StateIncrement(xdx, x, dx);
+%     StateScatter(xdx, v, T + Delta);
+%     LoadConstraint_C(Qc, 1.0 / (Delta * Delta));
+
+%     StateIncrement(xdx, x, -dx);
+%     StateScatter(xdx, v, T - Delta);
+%     LoadConstraint_C(Qc, 1.0 / (Delta * Delta));
+
+%     StateScatter(x, v, T);  // back to original state
+
+%     bool success = StateSolveCorrection(Dvdt, L, R, Qc, 
+%                         1.0, 0, 0, x, v, T, false, true);
+
+%     return success;
+% }
+% \end{verbatim}
+% \noindent\rule{\textwidth}{1pt} \newline
+
+% Argomenti della funzione:
+% \begin{itemize}
+%     \item In Dvtd ed L verranno salvati la variazione di velocità e di reazione vincolare calcolati.
+%     A differenza del caso precedente specifichiamo che in Dvdt verrà calcolata un'accelerazione (più precisamente un impulso ${\Delta\avect{v}}/{\Delta t}$), non più una differenza di velocità.
+%      \ref{eq:eulforw_iterstep}.
+%     \item Con x, v e T si passa al Solver lo stato (posizione e velocità) ed il tempo corrente.
+%     \item Infine 2 flag: la prima forza l'aggiornamento dello stato del sistema, mentre la seconda il setup del solver.
+% \end{itemize}
+% Rispetto alla funzione riportata nel paragrafo precedente, mancano:
+% \begin{itemize}
+%     \item R e Qc: infatti i termini noti sono sempre i vettori $\avect{F}$ e $\avect{Q_d}$
+%     \item c\_a, c\_v e c\_x : poiché il coefficiente dell'accelerazione è sempre 1 ed i rimanenti sono sempre 0.
+% \end{itemize}
+
+% Ciò che viene svolto dalla funzione è piuttosto semplice da intuire se si tiene a mente quanto visto in precedenza. 
+% \begin{itemize}
+%     \item Viene creato un vettore per i termini noti R, il cui unico membro è la forza $\avect{F}$ con coefficiente 1 come accennato in precedenza.
+%     \item Più complesso (e interessante) è il calcolo di $\avect{Q}_d$ dall'equazione \label{eq:Qd}
+% \end{itemize}
+
+% \subsection{Eulero esplicito}
+% Viene riportata l'implementazione della funzione \emph{Advance} del metodo di Eulero esplicito. Essa è utilizzata per calcolare lo stato futuro dato lo stato attuale, ossia per far avanzare la simulazione di un timestep.
+% \begin{verbatim}
+%     void ChTimestepperEulerExpl::Advance(const double dt) {
+%     // setup main vectors
+%     GetIntegrable()->StateSetup(Y, dYdt);
+
+%     // setup auxiliary vectors
+%     L.Reset(this->GetIntegrable()->GetNconstr());
+
+%     GetIntegrable()->StateGather(Y, T);  // state <- system
+
+%     GetIntegrable()->StateSolve(dYdt, L, Y, T, dt, false);  // dY/dt = f(Y,T)
+
+%     // Euler formula!
+%     //   y_new= y + dy/dt * dt
+
+%     Y = Y + dYdt * dt;  //  also: GetIntegrable().StateIncrement(y_new, y, Dy);
+
+%     T += dt;
+
+%     GetIntegrable()->StateScatter(Y, T);            // state -> system
+%     GetIntegrable()->StateScatterDerivative(dYdt);  // -> system auxiliary data
+%     GetIntegrable()->StateScatterReactions(L);      // -> system auxiliary data
+% }
+% \end{verbatim}
+% In dYdt ed L vengono salvati i risultati di StateSolve che trova le accelerazioni del sistema e le reazioni vincolari. Lo stato viene aggiornato secondo la formula \ref{eq:Eul_Forw} e stati, accelerazioni e reazioni vengono propagati al sistema tramite le varie funzioni \emph{scatter}.
+% \section{Implementazione dei metodi impliciti}
+% Si riportano le funzioni di avanzamento di alcuni dei metodi di Eulero Implicito  e Newmark. Si riportano solo questi due esempi in quanto le implementazioni dei metodi sono in realtà simili tra loro.
+
+\subsection{Eulero implicito}
+La funzione \emph{Advance} della classe \emph{ChTimestepperEulerImplicit} riceve un solo argomento, cioè l'ampiezza del timestep \emph{dt} (chiamata $h$ nelle formule), in quanto può accedere a tutte le grandezze del sistema, che fa chiamando la funzione \emph{StateGather}, dopo aver resettato tutti i vettori che verranno utilizzati in seguito.
+Si noti ora come come avviene l'inizializzazione dell'algoritmo di Newton fornendo un valore iniziale: la posizione viene inizializzata applicando uno step del metodo di Eulero esplicito mentre la velocità viene posta uguale a quella dell'istante di partenza. In generale per la continuità di entrambe il valore al timestep $l$ è un buon punto di partenza per il calcolo dei valori nell'istante successivo, data la continuità di posizione e velocità ed essendo $h$ piccolo. Lo stesso può essere detto per la posizione calcolata secondo il metodo di Eulero esplicito. Quest'ultimo non è consigliabile applicarlo come initial guess per la velocità in quanto questo  schema non trova direttamente le accelerazioni istantanee. Dopo aver azzerato i contatori del solutore si entra in un ciclo \emph{for} che: 
+\begin{itemize}
+    \item Propaga nel sistema l'ultimo stato calcolato (il warm start nel caso della prima iterazione).
+    \item Resetta i vettori dei residui.
+    \item Fornisce i valori dei residui aggiornati secondo la formula \ref{eq:eulfor_NRiter1} e riportata nel commento.
+    \item Interrompe l'iterazione se entrambi i residui sono al di sotto della tolleranza prestabilita.
+    \item Risolve il sistema lineare applicando i coefficienti della matrice in \ref{eq:eulfor_NRiter1}.
+    \item Aggiorna stato, contatori e reazioni vincolari.
+\end{itemize}
+Al termine del ciclo viene aggiornata l'accelerazione, lo stato e le reazioni e vengono diffuse nel sistema.
+\begin{verbatim}
+    void ChTimestepperEulerImplicit::Advance(const double dt) {
+    // downcast
+    ChIntegrableIIorder* mintegrable = (ChIntegrableIIorder*)this->integrable;
+
+    // setup main vectors
+    mintegrable->StateSetup(X, V, A);
+
+    // setup auxiliary vectors
+    Dv.Reset(mintegrable->GetNcoords_v(), GetIntegrable());
+    Dl.Reset(mintegrable->GetNconstr());
+    Xnew.Reset(mintegrable->GetNcoords_x(), mintegrable);
+    Vnew.Reset(mintegrable->GetNcoords_v(), mintegrable);
+    R.Reset(mintegrable->GetNcoords_v());
+    Qc.Reset(mintegrable->GetNconstr());
+    L.Reset(mintegrable->GetNconstr());
+
+    mintegrable->StateGather(X, V, T);  // state <- system
+
+    // Extrapolate a prediction as warm start
+
+    Xnew = X + V * dt;
+    Vnew = V;  //+ A()*dt;
+
+    // use Newton Raphson iteration to solve implicit Euler for v_new
+    //
+    // [ M-dt*dF/dv-dt^2*dF/dx   Cq'][ Dv   ] = [M*(v_old-v_new)+dt*f+dt*Cq'*l]
+    // [ Cq                      0  ][-dt*Dl] = [-C/dt]
+
+    numiters = 0;
+    numsetups = 0;
+    numsolves = 0;
+
+    for (int i = 0; i < this->GetMaxiters(); ++i) {
+        mintegrable->StateScatter(Xnew, Vnew, T + dt);  // state -> system
+        R.Reset();
+        Qc.Reset();
+        mintegrable->LoadResidual_F(R, dt);
+        mintegrable->LoadResidual_Mv(R, (V - Vnew), 1.0);
+        mintegrable->LoadResidual_CqL(R, L, dt);
+        mintegrable->LoadConstraint_C(Qc, 1.0 / dt, Qc_do_clamp, Qc_clamping);
+
+
+        if ((R.NormInf() < abstolS) && (Qc.NormInf() < abstolL))
+            break;
+
+        mintegrable->StateSolveCorrection(
+            Dv, Dl, R, Qc,
+            1.0,                 
+            -dt,                 
+            -dt * dt,            
+            Xnew, Vnew, T + dt,  
+            false,               
+            true                 
+            );
+
+        numiters++;
+        numsetups++;
+        numsolves++;
+        //it is not -(1.0/dt) because StateSolveCorrection flips sign of Dl
+        Dl *= (1.0 / dt);  
+        L += Dl;
+
+        Vnew += Dv;
+
+        Xnew = X + Vnew * dt;
+    }
+
+    mintegrable->StateScatterAcceleration((Vnew - V) * (1 / dt));  
+
+    X = Xnew;
+    V = Vnew;
+    T += dt;
+
+    mintegrable->StateScatter(X, V, T);      
+    mintegrable->StateScatterReactions(L);   
+}
+\end{verbatim}
+
+
+\subsection{Metodo di Newmark}
+\paragraph{Setup dei parametri}
+\begin{verbatim}
+    void ChTimestepperNewmark::SetGammaBeta(double mgamma, double mbeta) {
+    gamma = mgamma;
+    if (gamma < 0.5)
+        gamma = 0.5;
+    if (gamma > 1)
+        gamma = 1;
+    beta = mbeta;
+    if (beta < 0)
+        beta = 0;
+    if (beta > 1)
+        beta = 1;
+}
+\end{verbatim}
+
+\paragraph{Avanzamento}
+
+
+\begin{verbatim}
+// Performs a step of Newmark constrained implicit for II order DAE systems
+void ChTimestepperNewmark::Advance(const double dt) {
+    // downcast
+    ChIntegrableIIorder* mintegrable = (ChIntegrableIIorder*)this->integrable;
+
+    // setup main vectors
+    mintegrable->StateSetup(X, V, A);
+
+    // setup auxiliary vectors
+    Da.Reset(mintegrable->GetNcoords_a(), GetIntegrable());
+    Dl.Reset(mintegrable->GetNconstr());
+    Xnew.Reset(mintegrable->GetNcoords_x(), mintegrable);
+    Vnew.Reset(mintegrable->GetNcoords_v(), mintegrable);
+    Anew.Reset(mintegrable->GetNcoords_a(), mintegrable);
+    R.Reset(mintegrable->GetNcoords_v());
+    Rold.Reset(mintegrable->GetNcoords_v());
+    Qc.Reset(mintegrable->GetNconstr());
+    L.Reset(mintegrable->GetNconstr());
+
+    mintegrable->StateGather(X, V, T);  // state <- system
+    mintegrable->StateGatherAcceleration(A);
+
+    // extrapolate a prediction as a warm start
+
+    Vnew = V;
+    Xnew = X + Vnew * dt;
+
+    // use Newton Raphson iteration to solve implicit Newmark for a_new
+
+    //
+    // [ M - dt*gamma*dF/dv - dt^2*beta*dF/dx    Cq' ] [ Da   ] = [ -M*(a_new) + f_new + Cq*l_new ]
+    // [ Cq                                      0   ] [ Dl   ] = [ -1/(beta*dt^2)*C              ]
+
+    numiters = 0;
+    numsetups = 0;
+    numsolves = 0;
+
+    for (int i = 0; i < this->GetMaxiters(); ++i) {
+        mintegrable->StateScatter(Xnew, Vnew, T + dt);  // state -> system
+
+        R.Reset(mintegrable->GetNcoords_v());
+        Qc.Reset(mintegrable->GetNconstr());
+        mintegrable->LoadResidual_F(R, 1.0);                                                    //  f_new
+        mintegrable->LoadResidual_CqL(R, L, 1.0);                                               //   Cq'*l_new
+        mintegrable->LoadResidual_Mv(R, Anew, -1.0);                                            //  - M*a_new
+        mintegrable->LoadConstraint_C(Qc, (1.0 / (beta * dt * dt)), Qc_do_clamp, Qc_clamping);  //  - 1/(beta*dt^2)*C
+
+        if (verbose)
+            GetLog() << " Newmark iteration=" << i << "  |R|=" << R.NormTwo() << "  |Qc|=" << Qc.NormTwo() << "\n";
+
+        if ((R.NormInf() < abstolS) && (Qc.NormInf() < abstolL))
+            break;
+
+        mintegrable->StateSolveCorrection(
+            Da, Dl, R, Qc,
+            1.0,                 // factor for  M
+            -dt * gamma,         // factor for  dF/dv
+            -dt * dt * beta,     // factor for  dF/dx
+            Xnew, Vnew, T + dt,  // not used here (scatter = false)
+            false,               // do not StateScatter update to Xnew Vnew T+dt before computing correction
+            true                 // force a call to the solver's Setup() function
+            );
+
+        numiters++;
+        numsetups++;
+        numsolves++;
+        // Note it is not -= Dl because StateSolveCorrection flips sign of Dl
+        L += Dl;  
+        Anew += Da;
+
+        Xnew = X + V * dt + A * (dt * dt * (0.5 - beta)) + Anew * (dt * dt * beta);
+
+        Vnew = V + A * (dt * (1.0 - gamma)) + Anew * (dt * gamma);
+    }
+
+    X = Xnew;
+    V = Vnew;
+    A = Anew;
+    T += dt;
+
+    mintegrable->StateScatter(X, V, T);        // state -> system
+    mintegrable->StateScatterAcceleration(A);  // -> system auxiliary data
+    mintegrable->StateScatterReactions(L);     // -> system auxiliary data
+}
+\end{verbatim}

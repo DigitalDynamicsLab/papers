@@ -1,0 +1,87 @@
+\chapter{Metodi numerici specifici}
+Verranno di seguito illustrati metodi numerici per la soluzione del problema di Cauchy espressamente ideati per l'applicazione a simulazioni multibody.
+
+Dal momento che d'ora in avanti si farà specifico riferimento alla dinamica di sistemi meccanici si riprenderà la notazione utilizzata nella parte \ref{part:LagrDyn}. In luogo dei vettori $\avect{y}$ ed $\avect{y}'$ si avranno $\{\avect{q} , \avect{v}\}$ e $\{\avect{v} , \avect{a}\}$; rispettivamente posizioni e velocità e velocità ed accelerazioni del sistema. Sempre riprendendo la notazione si avrà \begin{itemize}
+    \item $\amatr{C} = \amatr{C}(\avect{q},t)$ vettore delle equazioni vincolari
+    \item $\amatr{C_q} =\frac{\partial\avect{C}}{\partial q}$
+    \item $\amatr{M}$ matrice di massa
+    \item $\avect{\lambda}$ vettore di moltiplicatori lagrangiani (reazioni vincolari)
+    \item $\avect{f}$ forze agenti sul sistema
+    \item $l$ indica lo step di integrazione
+    \item Con $h \in \mathbb{R}$ si indica sempre l'ampiezza del \emph{timestep}. 
+
+\end{itemize}
+
+Riguardo le equazioni della dinamica dei sistemi verranno utilizzate la prima equazione della formulazione lagrangiana \ref{eq:dyn_sys_1stline} e l'equazione delle condizioni di vincolo \ref{eq:Cqt}. Dato lo stato del sistema è possibile trovare accelerazioni e reazioni vincolari grazie a queste relazioni.
+A proposito dell'equazione della dinamica dei sistemi vincolati \ref{eq:dyn_sys_1stline} essa può essere riscritta come: \[\amatr{M}\avect{a} + \amatr{C}_q^T\avect{\lambda} = \avect{f} \] Dove il vettore delle forze applicate $f$ comprende sia le forze esterne $Q_e$ che il termine cosiddetto giroscopico $Q_v$. Si consideri inoltre che, a seconda della letteratura di riferimento, l'equazione \ref{eq:lambda} che definisce $\lambda$ può avere o no il segno meno. Nella implementazione seguente si è scelta la seconda opzione, ragion per cui si scriverà d'ora in avanti:
+\begin{equation}\label{eq:dynamics}
+    \amatr{M}\avect{a}-\amatr{C}_q^T\avect{\lambda}-\avect{f} = 0
+\end{equation}
+
+Inoltre nel corso del capitolo verrà menzionato un fenomeno chiamato smorzamento numerico (\textit{numerical damping}), un errore numerico che si manifesta come la presenza di uno smorzamento fittizio. Si fornisce una trattazione più dettagliata del fenomeno in sez. \ref{sec_numdamp}.
+ \section{Newmark Method}
+ Questo metodo nasce per studiare la risposta dinamica di strutture e solidi modellati con gli elementi finiti e per questa ragione è assai diffuso nella comunità FEM. %La formulazione si basa sul Teorema di Lagrange, ovvero sull'esistenza di un $\avect{a}_{\beta}\quad t.c. \quad \avect{v}^{l+1} = \avect{v}^l h\avect{a}_{\beta}$ con $\avect{a}^l \leq \avect{a}_{\beta} \leq\avect{a}^{l+1}$
+ 
+ \begin{align} \label{eq:NewmarkDef}
+ \amatr{M}\avect{a}^{l+1}-(\amatr{C}_q^t\avect{\lambda}+\avect{f})^{l+1}&=0 \\
+ \avect{v}^{l+1}- \avect{v}^l -h \left[(1-\gamma)\avect{a}^l+\gamma \avect{a}^{l+1}\right]&=0 \\
+\avect{q}^{l+1}-\avect{q}^l - h \avect{v}^l-\frac{h^2}{2}\left[(1-2\beta)\avect{a}^l+2\beta\avect{a}^{l+1}\right]&=0
+ \end{align}
+ %È un metodo del second'ordine, implicito ed incondizionatamente stabile per determinati valori dei coefficienti che lo caratterizzano. 
+ Caratteristiche del metodo \cite{newmark59}:
+\begin{itemize}
+    \item si basa sul Teorema di Lagrange, ovvero sull'esistenza di un $\avect{a}_{\beta}\quad $tale che $ \quad \avect{v}^{l+1} = \avect{v}^l + h\avect{a}_{\beta}$ con $\avect{a}^l \leq \avect{a}_{\beta} \leq\avect{a}^{l+1}$
+    \item $\gamma$ è normalmente compreso tra 1/2 ed 1
+    \item $\gamma$ è solitamente posto uguale ad 1/2, unico valore per il quale si ottiene ordine di convergenza quadratico. 
+    \item $\beta$ è compreso tra 0 ed 1.
+    \item per $\beta =1/4, \gamma= 1/2$ si ha il metodo dell'accelerazione costante.
+    \item per $\beta =1/6, \gamma= 1/2$ si ha il metodo dell'accelerazione lineare.
+    \item Per $\gamma \geq 1/2$ e $\beta \geq  \frac{(\gamma + \frac{1}{2})^2}{4}$ il metodo è incondizionatamente stabile.
+    \item Il metodo dell'accelerazione costante è incondizionatamente stabile.
+    \item Lo smorzamento numerico è nullo per $\gamma = \frac{1}{2}$ mentre si manifesta per valori maggiori, crescendo  con $\gamma$
+
+\end{itemize}
+ \section{HHT Method}
+ Il metodo Hilber-Hughes-Taylor è una generalizzazione del metodo di Newmark che aggiunge un ulteriore parametro $\alpha$ \cite{Negrut2006}. 
+ \begin{align}
+\amatr{M}\avect{a}^{l+1}-(1+\alpha)(\amatr{C}_q^t\avect{\lambda}+\avect{f})^{l+1}+\alpha(\amatr{C}_q^T\avect{\lambda}+f)^l&=0 \\
+\avect{v}^{l+1}-\avect{v}^l-h[(1-\gamma)\avect{a}^l+\gamma\avect{a}^{l+1}] &=0 \\
+\avect{q}^{l+1}-\avect{q}^l-h\avect{v}^l-\frac{h^2}{2}[(1-2\beta)\avect{a}^l+2\beta\avect{a}^{l+1}] &=0
+ \end{align}
+ Caratteristiche del metodo \cite{Hilber1977} \cite{Hughes1983}:
+\begin{itemize}
+    \item Il parametro $\alpha$ permette di controllare la dissipazione numerica. Per $\alpha = 0$ il metodo coincide con Newmark, al decrescere del parametro vengono smorzate le frequenze più alte.
+    \item Basandosi sull'esperienza la letteratura suggerisce di porre $0\leq \alpha \leq1/3$ , $\beta = (1-\alpha)^2/4 $ e $\gamma = 1/2 - \alpha$.  
+    \item A-stabile (per i valori dei parametri riportati sopra)
+    \item Ordine di convergenza 2 (per i valori dei parametri riportati sopra)
+\end{itemize}
+\section{Generalized-$\alpha$ Method}
+\paragraph{Confronto fra i metodi in termini di convergenza e stabilità}
+Dalla seconda barriera di Dahlquist (Teorema \ref{theo:DahlquistII}) sappiamo che non esistono metodi multistep lineari A-stabili di ordine superiore a due. Il metodo dei trapezi utilizzato per DAE (\emph{Differetial-Algebraic Equations}) dà luogo a reazioni vincolari oscillanti instabili se utilizzato per sistemi vincolati. Al contrario i metodi HHT e generalized-$\alpha$, introdotto nel seguito, sono tra i pochi integratori di ordine 2 che possono risolvere DAE vincolate.
+
+Il metodo generalized-$\alpha$ \cite{generalizedAlphaHulbert93} \cite{JayNegrut2008} è un'evoluzione del metodo HHT, nel quale tutti i parametri vengono settati a partire da un solo parametro $\rho_\infty$. È un metodo del second'ordine come accennato in precedenza, e permette il controllo della dissipazione numerica.
+
+Si definisce come segue:
+ 
+\begin{align} \label{eq:Gen-Alpha1}
+\amatr{M}\avect{a_*}^{l+1}-(\amatr{C}_q^t\avect{\lambda}+f)^{l+1}&=0 \\ \label{eq:Gen-Alpha2}
+(1-\alpha_m)\avect{a}^{l+1}+\alpha_m\avect{a}^l = (1-\alpha_f)\avect{a_*}^{l+1} + \alpha_f\avect{a_*}^l&=0 \\
+\avect{v}^{l+1}-\avect{v}^l-h[(1-\gamma)\avect{a}^l+\gamma\avect{a}^{l+1}] &=0 \\
+\avect{q}^{l+1}-\avect{q}^l-h\avect{v}^l-\frac{h}{2}[(1-2\beta)\avect{a}^l+2\beta\avect{a}^{l+1}] &=0
+\end{align}
+
+Come anticipato tutti i parametri elencati vengono settati a partire da un unico parametro $\rho_\infty \in [0,1]$:
+\begin{align}
+    \alpha_m &= \frac{2\rho_\infty-1}{1+\rho_\infty} \\
+    \alpha_f &= \frac{\rho_\infty}{1+\rho_\infty}   \\
+    \beta &= \frac{1}{4}\left(\gamma+\frac{1}{2} \right)^2 \\
+    \gamma &= \frac{1}{2}+\alpha_f - \alpha_m
+\end{align}
+
+Si noti che: \begin{itemize}
+    \item Per $\rho_\infty=0$ si ha massima dissipazione asintotica ed il metodo ha smorzamento massimo.
+    \item Il metodo HHT è come il metodo generalized-$\alpha$ con $\alpha_m =0$ e $\alpha_f = \alpha$. Effettivamente i metodi hanno proprietà simili. Per verificarlo si sostituisca $\avect{a_*}$ calcolato in $l$ ed $l+1$ secondo
+    \ref{eq:Gen-Alpha1} in  \ref{eq:Gen-Alpha2} ($\amatr{M}$ è sempre invertibile).
+    \item Per $\rho_\infty=1$ d'altra parte non c'è dissipazione numerica, come nel metodo dei trapezi. A differenza di questo, tuttavia, il metodo generalized-$\alpha$ si comporta bene in presenza di vincoli. 
+\end{itemize}
+Nella pratica uno smorzamento numerico è quasi sempre inserito anche se il sistema fisico non è dissipativo, onde evitare divergenze in simulazioni prolungate. Di solito si utilizza un valore intermedio di $\rho_\infty$, che aiuta a scartare frequenze di oscillazione elevate di scarso interesse. Solitamente il valore di $\rho_\infty$ viene trovato euristicamente, partendo da valori prossimi a 0 ed aumentandolo gradualmente fino alla comparsa di armoniche a frequenza elevata.

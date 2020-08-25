@@ -1,0 +1,92 @@
+% SVMono/SVMult DOCUMENT CLASS OPTION ITALIANO -- to get Italian texts
+%
+% This is an enhancement for the
+% LaTeX document class for Springer books,
+%     monographs (SVMONO)
+% or
+%     contributed books (SVMULT)
+%
+% This file is no substitute for a correct language switching with the
+% Babel system - it's merely a supplement for Springer defined texts
+%
+%%
+%%
+%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+\ProvidesFile{svitaliano.clo}
+              [2005/09/27 v1.0
+      SVMono/SVMult class option for Italian language support]
+%
+\AtEndOfClass{%
+% inform user
+\typeout{%
+^^J+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+^^J+ svitaliano.clo 2005/09/27 v1.0 \space SVMono / SVMult class +
+^^J+ option to get automatically provided texts in Italian +
+^^J+++++++++++++++++++++++++++++++++++++++++++++++++++++++++^^J}%
+%
+\def\switcht@italian{\svlanginfo
+\def\abstractname{Sommario.}%
+\def\ackname{Ringraziamenti.}%
+\def\andname{e}%
+\def\bibname{Bibliografia}%
+\def\lastandname{, e}%
+\def\appendixname{Appendice}%
+\def\chaptername{Capitolo}%
+\def\claimname{Richiesta}% ???????
+\def\conjecturename{Ipotesi}%
+\def\contentsname{Indice}%
+\def\corollaryname{Corollario}%
+\def\definitionname{Definizione}%
+\def\examplename{Esempio}%
+\def\exercisename{Esercizio}%
+\def\figurename{Fig.}%
+\def\keywordname{{\bf Parole chiave:}}%
+\def\indexname{Indice}%
+\def\lemmaname{Lemma}%
+\def\contriblistname{Elenco dei collaboratori}%
+\def\listfigurename{Elenco delle figure}%
+\def\listtablename{Elenco delle tabelle}%
+\def\mailname{{\it Indirizzo\/}:}%
+\def\noteaddname{Nota aggiunta in bozza}%
+\def\notename{Nota}%
+\def\partname{Parte}%
+\def\prefacename{Prefazione}%
+\def\problemname{Problema}%
+\def\proofname{Dimostrazione}%
+\def\propertyname{Propriet\`a}%
+\def\propositionname{Proposizione}%
+\def\questionname{Domanda}%
+\def\refname{Bibliografia}%
+\def\remarkname{Osservazione}%
+\def\seename{vedere}%
+\def\solutionname{Soluzione}%
+\def\subclassname{{\it Subject Classifications\/}:}% Classificazione per argomento
+\def\tablename{Tabella}%
+\def\theoremname{Teorema}}
+%
+\def\switcht@@therlang{\switcht@italian}%
+\gdef\svlanginfo{\typeout{Parlare Italiano.}\global\let\svlanginfo\relax}
+%
+\AtBeginDocument{\@ifpackageloaded{babel}{%
+\@ifundefined{captionsitalian}{}{\addto\captionsitalian{\switcht@italian}}%
+}{\switcht@@therlang}%
+}%
+}%
+%
+\endinput
+%%
+%% End of file `svitaliano.clo'.

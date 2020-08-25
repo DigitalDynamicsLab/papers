@@ -1,0 +1,112 @@
+\documentclass{article}
+
+\usepackage{corl_2020} % Use this for the initial submission.
+%\usepackage[final]{corl_2020} % Uncomment for the camera-ready ``final'' version.
+
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{caption}
+\usepackage{subcaption}
+%\usepackage{xcolor}
+\usepackage{wrapfig}
+\usepackage{float}
+
+\title{End-to-end learned autonomous off-road navigation using a physics-based simulation framework}
+
+% Reinforcement learning using end-to-end networks for off-road autonomous navigation
+
+% Reinforcement learned for off-road autonomous navigation using physics-based simulation
+
+% The \author macro works with any number of authors. There are two
+% commands used to separate the names and addresses of multiple
+% authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to
+% break the lines. Using \AND forces a line break at that point. So,
+% if LaTeX puts 3 of 4 authors names on the first line, and the last
+% on the second line, try using \AND instead of \And before the third
+% author name.
+
+% NOTE: authors will be visible only in the camera-ready (ie, when using the option 'final'). 
+% 	For the initial submission the authors will be anonymized.
+
+\author{
+  Asher Elmquist \\
+  Department of Mechanical Engineering \\
+  University of Wisconsin-Madison \\
+  Madison WI, USA \\
+  amelmquist@wisc.edu \\
+  \And
+  Simone Benatti \\
+  Dipartimento di Ingegneria ed Architettura \\
+  Università di Parma \\
+  Parma, Italy \\
+  simone.benatti@studenti.unipr.it \\
+  \And
+  Aaron Young \\
+  Department of Mechanical Engineering \\
+  University of Wisconsin-Madison \\
+  Madison WI, USA \\
+  aryoung5@wisc.edu \\
+  \And
+  Alessandro Tasora \\
+  Dipartimento di Ingegneria ed Architettura \\
+  Università di Parma \\
+  Parma, Italy \\
+  alessandro.tasora@unipr.it \\
+  \And
+  Radu Serban \\
+  Department of Mechanical Engineering \\
+  University of Wisconsin-Madison \\
+  Madison WI, USA \\
+  serban@wisc.edu \\
+  \And
+  Dan Negrut  \\
+  Department of Mechanical Engineering \\
+  University of Wisconsin-Madison \\
+  Madison WI, USA \\
+  negrut@wisc.edu \\
+}
+
+\include{macros}
+
+\begin{document}
+\maketitle
+
+%===============================================================================
+
+\begin{abstract}
+This contribution discusses an end-to-end reinforcement learning approach for off-road autonomous vehicle (AV) navigation. Both learning and testing are done in simulation. The contribution highlights: ($i$) the strategy employed for end-to-end learning; and ($ii$) the simulation infrastructure used to learn and test the control policy. For ($i$), we use sensor data fusion (camera, GPS, and IMU). For ($ii$), we developed a physics-based, open source integrated simulation environment that supports vehicle dynamics, deformable/undeformable terrains, and virtual sensing. We use a Gator off-road vehicle to demonstrate how a policy learned on flat undeformable terrain performs when used in hilly conditions while navigating around a course of randomly placed obstacles. The hilly terrain covers a swath of 80$ \times $80 meters and the soil can everywhere be either undeformable, or deformable hard (silt-like), or deformable soft (snow-like). The results reported herein can be reproduced with models and data available in a public repository \cite{CoRLsupportData2020}. Movies associated with the tests run are available online  \cite{CoRLpaperVideos2020}.
+%The policy is learned on rigid-terrain, with uneven terrain before being deployed in an environment with deformable terrain, and additional terrain obstacles to test and understand robustness. This study flexes an open-source software platform that supports robot and autonomous vehicle simulation by providing support for vehicle dynamics, deformable terrain, and virtual sensors. The learned policy is tested for robustness in the environment to understand the policy's ability to successfully and consistently navigate a complex off-road environment and test the sensitivity of the policy to the training environment. 
+
+\end{abstract}
+
+% Two or three meaningful keywords should be added here
+\keywords{Simulation, Reinforcement Learning, Off-road Autonomous Vehicles, Deformable Terrain} 
+
+%===============================================================================
+
+\input{sections/introduction}
+\input{sections/related}
+\input{sections/environment}
+\input{sections/learning}
+\input{sections/demonstration}
+\input{sections/results}
+\input{sections/conclusion}
+
+%===============================================================================
+
+% The maximum paper length is 8 pages excluding references and acknowledgements, and 10 pages including references and acknowledgements
+
+\clearpage
+% The acknowledgments are automatically included only in the final version of the paper.
+\acknowledgments{This work was carried out in part with support from the Safety Research using Simulation (SAFER-SIM) program. SAFER-SIM is funded by a grant from the U.S. Department of Transportation’s University Transportation Centers Program (69A3551747131). The U.S. Government assumes no liability for the ideas expressed in this document or the use thereof.}
+
+%===============================================================================
+
+\bibliography{refs/newREFS,refs/refsSensors,refs/refsAutonomousVehicles,refs/refsChronoSpecific,refs/refsSBELspecific,refs/refsMBS,refs/refsTerramech,refs/refsRobotics,refs/refsStatsML}
+
+\end{document}

@@ -1,0 +1,20 @@
+%!TEX root = ../root.tex
+
+\section{Conclusion and Future Work}
+\label{sec:conclusions}
+This contribution has two main themes. The first pertains a simulation platform, called Chrono, that supports AV off-road mobility studies. The second focuses on end-to-end learning as enabled by the Chrono environment, which anchors both the learning and testing phases. The end-to-end policy is used in flat and hilly landscapes, with deformable terrain that can be hard (silt-like) or soft (snow-like). We noted the following: policies learned on flat terrain are insufficient for navigating hilly scenarios; policies learned on rigid terrain transfer quite well to deformable terrain when the terrain is flat; the hillier the landscape, the harder it is to navigate it (Fig.\ref{fig:successRates}); the more obstacles are randomly placed on the course, the less likely it is for the policy to see the vehicle through; the control policy led to trip trajectories that came rather close to those associated with PSO, a third party trajectory planning tool (Fig.\ref{fig:pso_length_compare}); there is a sizable number of head-on collisions that point to room for improvement in the derived policy (Fig.\ref{fig:rigid_failure_metric_histogram}). Note that the testing conditions, in terms of average number of obstacles per unit area, were more harsh than the learning conditions.
+
+Looking ahead, we plan to pursue several research thrusts and simulation platform development avenues. One direction is to investigate more complex control stacks that would combine the end-to-end with more traditional strategies such as model predictive control. The current work should be expanded to understand how tracked vehicles perform under similar conditions given that their traction and turning radius differ significantly from their wheel counterparts. Work is underway for faster SCM simulation that will allow straight training on deformable soil. Not analyzed in this contribution is the steering control input to the vehicle, which can often be noisy based on the output of the NN. Finally, we plan to investigate approaches that enhance the chance of simulation-derived policies transferring effectively to the real world.
+
+
+%I reworked this section since it was a single sentence. I also dropped the reference to the noisy steering data since we never analyzed it. I think its good to mention it (I don't want to sweep anything under the rug), but I don't think we should put the results out there unless we can do it justice by analyzing and understanding it. - Asher
+
+%more complex AV control stacks, that in addition to end-to-end policies bring into discussion model predictive control strategies; 
+
+%the case of tracked vehicles, which are quite different than wheeled vehicles in that they can turn in place at zero translational velocity; 
+
+%a faster SCM simulation strategy, which will allow training on deformable terrains; 
+
+%how we can smooth out the steering wheel input produced by the policy -- it is far from what a human would do in that is aggressive in relation to left/right swings (plots not shown but available in supplemental material \cite{CoRLsupportData2020});
+
+%and, approaches that improve the chances of simulation-derived policies to transfer to the real world.

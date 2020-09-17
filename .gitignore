@@ -2,3 +2,16 @@
 *.bbl
 *.bcf
 *.blg
+bibliography/refsFEM.bib.sav
+bibliography/refsFEM.bib.bak
+bibliography/refsOPT.bib.sav
+bibliography/refsMBS.bib.sav
+bibliography/refsMBS.bib.bak
+courses/computational_mechanics/computational_mechanics.log
+courses/computational_mechanics/computational_mechanics.run.xml
+courses/computational_mechanics/computational_mechanics.out
+2019/CMAME_iga/iga_beams.spl
+2019/CMAME_iga/iga_beams.log
+2019/CMAME_iga/iga_beams.out
+2021/NODYCON_nonsmooth_ADMM/author.out
+2021/NODYCON_nonsmooth_ADMM/author.log

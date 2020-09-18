@@ -83,7 +83,7 @@ We propose to use the Alternating Direction Method of Multipliers (ADMM) for sol
 
 Following the seminal works by Moreau 
 \cite{mor88,Jean1992} 
-most formulations for non-smooth dynamical problems are based on Measure Differential Inclusions: just like differential inclusions they allow set-valued force laws (such as the Coulomb-Amontons dry friction model) but also generalize to the case where velocity is assumed to be a possibly discontinuous function of bounded variation in order to allow impulsive events.
+most formulations for non-smooth dynamical problems are based on Measure Differential Inclusions (MDI): just like differential inclusions they allow set-valued force laws (such as the Coulomb-Amontons dry friction model) but also generalize to the case where velocity is assumed to be a possibly discontinuous function of bounded variation in order to allow impulsive events.
 
 These problems can be solved by means of special time stepping methods that offer superior robustness and stability at the cost of solving a complementarity problem, or more in general a Variational Inequality (VI), per each time step
  \cite{acary2008numerical}. 
@@ -130,19 +130,21 @@ This paper will present a model for the non-smooth dynamics, it will show how to
 
 \section{The non-smooth multibody model}
 
-From \cite{TasoraAnitescuCMAME10} one can see that the non-smooth DVI after regularization and convexification turns into this: at each time step one has to solve the following (mixed) Cone Complementarity Problem:
+Different time stepping schemes have been proposed for MDIs, here we refer to the one discussed \cite{TasoraAnitescuCMAME10} without lack of generality. After regularization and convexification and discretization, the MDIs leads to a major numerical bottleneck to be solved at each time step: a (mixed) CCP with unknowns $\vect{v}$ and $\vect{\gamma}_\epsilon$: 
 
 \begin{subequations}
 	\begin{empheq}[left=\empheqlbrace]{align}
-    M \vect{v} - \vect{k} - D_\epsilon \bar{\vect{\gamma}}_\epsilon &= 0 \\
+    M \vect{v} - \vect{k} - D_\epsilon \vect{\gamma}_\epsilon &= 0 \\
     D_{\epsilon}^T \vect{v}  + \vect{b}_\epsilon &= \vect{u}_\epsilon\\
-    -\Upsilon^{\circ} \ni \vect{u}_\epsilon  \quad \bot &\quad  \bar{\vect{\gamma}}_\epsilon \in \Upsilon
+    -\Upsilon^{\circ} \ni \vect{u}_\epsilon  \quad \bot &\quad  \vect{\gamma}_\epsilon \in \Upsilon
 	\end{empheq}
 	\label{eq:ChronoMCCP}
 \end{subequations}
 
 where 
 \begin{itemize}
+		\item unknown $\vect{v}$ is the speed at the end of the time step, 
+		\item unknown $\vect{\gamma}_\epsilon$ is the reaction in contacts and bilateral joints, a vector-signed measure with Lebesgue decomposition in atomic parts (impacts) and continuous parts (continuous reactions),
     \item $M$ is a positive definite, block diagonal matrix containing masses and inertia tensors of the bodies
     \item $D_\epsilon$ is a sparse matrix, the transpose jacobian of all constraints
     \item $\vect{k}$ is a vector containing terms proportional to applied forces, among other things 
@@ -154,16 +156,10 @@ where
     \item $\Upsilon^{\circ}$ is the polar cone, opposite of the dual cone, i.e. $\Upsilon^{*} = -\Upsilon^\circ$.
 \end{itemize}
 
-
 For more details on the model we refer to 
 \cite{negrutSerbanTasoraJCND2017}. % Posing Multibody Dynamics with Friction and Contact as a Differential Complementarity Problem
 
-...
-
-
-[TO REWRITE THE FOLLOWING]
-
-By introducing the Schur complement 
+Introducing the Schur complement 
 \[
 N=D_{\epsilon}^T M^{-1} D_{\epsilon}
 \]
@@ -173,150 +169,192 @@ and the vector
 \]
 such that
 \[
-\vect{u}_\epsilon = N \bar{\vect{\gamma}}_\epsilon + \vect{r}_\epsilon \, , 
+\vect{u}_\epsilon = N \vect{\gamma}_\epsilon + \vect{r}_\epsilon \, , 
 \]
 one can also write the problem as the following CCP:
 \begin{align}
-    -\Upsilon^{\circ} \ni  N \bar{\vect{\gamma}}_\epsilon + \vect{r}_\epsilon 
+    -\Upsilon^{\circ} \ni  N \vect{\gamma}_\epsilon + \vect{r}_\epsilon 
     \quad \bot \quad  
-    \bar{\vect{\gamma}}_\epsilon \in \Upsilon
+    \vect{\gamma}_\epsilon \in \Upsilon
 	\label{eq:ChronoCCP}
 \end{align}
 
-This CCP corresponds, again, to a first order optimality condition of a convex quadratic program, but this time of the type
+This CCP corresponds exactly to a first order optimality condition of a convex quadratic program:
 \begin{subequations}
 	\begin{empheq}[box=\fbox]{align}
-	\text{min} \quad & \frac{1}{2} \bar{\vect{\gamma}}_\epsilon^T N \bar{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \bar{\vect{\gamma}}_\epsilon \\
-	\text{s.t.} \quad & \bar{\vect{\gamma}}_\epsilon \in \Upsilon
+	\text{min} \quad & \frac{1}{2} \vect{\gamma}_\epsilon^T N \vect{\gamma}_\epsilon + \vect{r}^T_\epsilon \vect{\gamma}_\epsilon \\
+	\text{s.t.} \quad & \vect{\gamma}_\epsilon \in \Upsilon
 	\end{empheq}
 	\label{eq:ChronoCCP_min}
 \end{subequations}
 %
-and in fact, the CCP \eqref{eq:ChronoCCP} can be written in the more conventional language of the KKT optimality conditions introducing $\vect{y}$ multipliers, for $\vect{y}=-\vect{u}_\epsilon$:
+and in fact, the CCP \eqref{eq:ChronoCCP} can be written in the more conventional language of the KKT optimality conditions on \textit{dual variables} $\vect{y}$ multipliers, for $\vect{y}=-\vect{u}_\epsilon$ and \textit{primal variables} $\vect{\gamma}_\epsilon$:
 \begin{subequations}
 	\begin{align}
-    N \bar{\vect{\gamma}}_\epsilon + \vect{r}_\epsilon + I \vect{y} &= 0 \\
-    \bar{\vect{\gamma}}_\epsilon &= \vect{z} \\
-    \Upsilon \ni \vect{z}  \quad \bot &\quad \vect{y} \in \Upsilon^\circ % \mathcal{N}(\Upsilon)
+    N \vect{\gamma}_\epsilon + \vect{r}_\epsilon + I \vect{y} &= \vect{0} \\
+    \vect{\gamma}_\epsilon &= \vect{z} \\
+    \Upsilon \ni \vect{z}  \quad \bot &\quad \vect{y} \in \Upsilon^\circ  
 	\end{align}
 	\label{eq:ChronoCCP_kkt}
 \end{subequations}
+After the convex program \eqref{eq:ChronoCCP_min} is solved by ADMM, one can compute $\vect{v} = M^{-1}( \vect{k} + \bar{D}_\epsilon \vect{\gamma}_\epsilon)$ with a quick postprocessing step. 
 
-Also in this case, efficient methods like ADMM can be used to solve the convex program \eqref{eq:ChronoCCP_min}. Differently from \eqref{eq:ChronoMCCP_min} in this case we would iterate to solve for unknown $\bar{\vect{\gamma}}_\epsilon$, and then compute $\vect{v} = M^{-1}( \vect{k} + \bar{D}_\epsilon \bar{\vect{\gamma}}_\epsilon)$ with a quick postprocessing step. We call this approach \textbf{IDEA "A"}.
-
-In this approach, the ADMM method requires a fast way to perform a projection 
-$\Pi_{\Upsilon}$ onto the friction cones $\Upsilon$.
-
-
-\subsection{Generalization: multi-flexible problems and non-conic force functions}
-
-In order to generalize the problem \eqref{eq:ChronoMCCP} we relax the assumption of $M$ being diagonal, and instead of $M$ we introduce a symmetric positive definite matrix $H$, not necessarily sparse, that contains linear combinations of stiffness and damping matrices, added to the mass matrix. Stiffness and damping matrices are needed when dealing with implicit integration of stiff forces as in FEA and compliant parts, in general they are block-sparse, anyway less sparse than the original $M$ matrix, thus rendering the computation of $H^{-1}$ much less friendly than computing $M^{-1}$.
-
-As a second generalization, we assume that $\bar{\vect{\gamma}}_\epsilon$ is not constrained in a friction cone $\Upsilon$, but rather in a generic convex set $\mathcal{C}$. That is, we assume $\bar{\vect{\gamma}}_\epsilon \in \mathcal{C}$ and at the same time we assume an associated \footnote{Not all dissipative constitutive models are associated, for example in some computational plasticity models the plastic flow might deviate respect to the normal to the yeld surface, and the Coulmb contact model itself is not associated -in fact the contact velocity $\vect{u}$ can range into a wider cone than the polar of the friction cone, but our DVI model compensates fur such effect. We will assume associated models heretofore, and we do not deal with non-associated models to avoid additional complexity for the moment.} flow $\vect{u}_\epsilon \in - \mathcal{N}_{C}(\bar{\vect{\gamma}}_\epsilon)$.
-
-Using generic $\mathcal{C}$ allows, for an example, a friction cone capped with some upper limit (ex to simulate plastic contacts that cannot withstand excessive pressure) or a friction cone shifted a bit downward (ex to simulate cohesion in contacts) etc.
-
-Under this more general setting, the time stepping of the multibody model becomes:
-
-\begin{subequations}
-	\begin{empheq}[left=\empheqlbrace]{align}
-    H \vect{v} - \vect{k} - {D}_\epsilon \bar{\vect{\gamma}}_\epsilon &= 0 \label{eq:ChronoVI_primal}\\
-    {D}_{\epsilon}^T \vect{v}  + \vect{b}_\epsilon &= \vect{u}_\epsilon\\
-    \bar{\vect{\gamma}}_\epsilon \in \mathcal{C} : \quad  \vect{u}_\epsilon &\in - \mathcal{N}_{C}(\bar{\vect{\gamma}}_\epsilon)  
-	\end{empheq}
-	\label{eq:ChronoVI}
-\end{subequations}
-
-This is a Variational Inequality (VI), and it contains the CCP of \eqref{eq:ChronoCCP_kkt} as a special case. In fact one can introduce a Schur matrix 
-\[
-N=D_{\epsilon}^T H^{-1} D_{\epsilon}
-\] similarly to what presented in  IDEA "A", and rewrite it as:
+The ADMM method in \cite{Stellato2020} can be used to solve problems in the form
 \begin{subequations}
 	\begin{align}
-    N \bar{\vect{\gamma}}_\epsilon + \vect{r}_\epsilon - \vect{u}_\epsilon &= 0 \\
-    \bar{\vect{\gamma}}_\epsilon \in \mathcal{C} : \quad  -\vect{u}_\epsilon &\in \mathcal{N}_{C}(\bar{\vect{\gamma}}_\epsilon) 
+    P \vect{x} + \vect{q} + A^T \vect{y} &= \vect{0} \\
+    A \vect{x} - \vect{b} &= \vect{z} \\
+    \mathcal{C} \ni \vect{z}  \quad \bot &\quad \vect{y} \in \mathcal{N}_{C}(\vect{z})
 	\end{align}
-	\label{eq:ChronoVI_schur}
+	\label{eq:OQSP_kkt}
 \end{subequations}
-Also, using the same symbols introduced in OSQP, with $\vect{y}=-\vect{u}_\epsilon$, one gets
-\begin{subequations}
-	\begin{align}
-    N \bar{\vect{\gamma}}_\epsilon + \vect{r}_\epsilon + I \vect{y} &= 0 \\
-    \bar{\vect{\gamma}}_\epsilon &= \vect{z} \\
-    \vect{z} \in \mathcal{C} : \quad  \vect{y} &\in \mathcal{N}_{C}(\bar{\vect{\gamma}}_\epsilon) 
-	\end{align}
-	\label{eq:ChronoVI_schur_kkt}
-\end{subequations}
-where one can easily see that this is a VI$(\vect{y}(\bar{\vect{\gamma}}_\epsilon), \mathcal{C})$ and that this is also the first order optimality condition of a convex quadratic program:
-\begin{subequations}
-	\begin{empheq}[box=\fbox]{align}
-	\text{min} \quad & \frac{1}{2} \bar{\vect{\gamma}}_\epsilon^T N \bar{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \bar{\vect{\gamma}}_\epsilon \\
-	\text{s.t.} \quad & \bar{\vect{\gamma}}_\epsilon \in \mathcal{C}
-	\end{empheq}
-	\label{eq:ChronoVI2_min}
-\end{subequations}
+and one can see that \eqref{eq:ChronoCCP_kkt} is a special case of \eqref{eq:OQSP_kkt} where $A=I$, $P=N$, $\mathcal{C}=\Upsilon$, $\vect{q}=\vect{r}$, $\vect{x}=\vect{\gamma}_\epsilon$, $\vect{b}=\vect{0}$, where some optimizations can take place because of the structure of our problem.
 
-Again, it is possible to apply ADMM algorithms to solve the problem.
+The ADMM method requires a fast way to perform a projection $\Pi_{\Upsilon}$ onto the friction cones $\Upsilon$ and a fast way to solve a linear problem with the matrix $A$. 
 
+We remark that the ADMM method just makes the assumption of $\Upsilon$ being convex, so the problem can be generalized to $\vect{\gamma}_\epsilon \in \mathcal{C}$ where $\mathcal{C}$ is a generic convex set and at the same time we assume an associated \footnote{Not all dissipative constitutive models are associated, for example in some computational plasticity models the plastic flow might deviate respect to the normal to the yeld surface, and the Coulmb contact model itself is not associated -in fact the contact velocity $\vect{u}$ can range into a wider cone than the polar of the friction cone, but our DVI model compensates fur such effect. We will assume associated models heretofore, and we do not deal with non-associated models to avoid additional complexity for the moment.} flow $\vect{u}_\epsilon \in - \mathcal{N}_{C}(\vect{\gamma}_\epsilon)$. For instance, $\mathcal{C}$ could be a capped friction cone to represent plasticization of contacts, or a cone translated downward to represent possible adhesion in contact up to a threshold, or the Von Mises yield region if $\vect{\gamma}_\epsilon$ represent stresses in finite elments undergoing plasticization. 
 
-
+Also, in sake of highest generality, in presence of finite elements one might need to use tangent stiffness matrices $K$ and damping matrices $D$ to accommodate an implicit integration scheme for stiff elements, and this means that the Schur complement would be computed as $N=D_{\epsilon}^T H^{-1} D_{\epsilon}$. Here $H$, taking the place of the original $M$ matrix, is rather a linear combination of $M$, $K$, $D$ (depending on the integration scheme) and in general is not diagonal anymore. This means that one cannot easily compute the Schur complement $N$, even in factored form, and this has some consequences on the implementation of the ADMM, that in fact we will rewrite in an unrolled form.
 
 
 \section{The ADMM solver}
 
-...
-
-[TO REWRITE THE FOLLOWING]
-
-
-The ADMM starts by stating a penalized objective function, that includes all the constraints by means of indicator functions:
+For variables $(\vect{x},\vect{z}) \in \mathbb{R}^m \times \mathbb{R}^n$, the ADMM methods solve constrained optimization problems with separable structure
 \begin{subequations}
 	\begin{align}
-	\text{min} \quad & \frac{1}{2} \vect{v}^T M \vect{v} - \vect{k}^T\vect{v} + \mathcal{I}_{\bar{D}_{\epsilon}^T \vect{v} + \vect{b}_\epsilon  = \vect{u}_\epsilon} (\tilde{\vect{v}}, \tilde{\vect{u}}_\epsilon) +
-	\mathcal{I}_{\mathcal{K}}(\vect{u}_\epsilon)\\
-	\text{s.t.} \quad & (\tilde{\vect{v}}, \tilde{\vect{u}}_\epsilon) = (\vect{v}, \vect{u}_\epsilon)
+    \text{min} \quad  & f(\vect{x}) + g(\vect{z}) \\
+	  \text{s.t.} \quad &  A \vect{x} + B \vect{z} - \vect{b} = \vect{0}
 	\end{align}
+	\label{eq:admm}
 \end{subequations}
-where $\mathcal{I}_{\bar{D}_{\epsilon}^T \vect{v} + \vect{b}_\epsilon  = \vect{u}_\epsilon}$ and $\mathcal{I}_{\mathcal{K}}$ are infinite if the constraint is violated and zero if not. This introduces a really strong barrier, yet non-smooth.
+by introducing an augmented Lagrangian
+\begin{align}
+\mathcal{L}_{\rho}(\vect{x},\vect{z},\vect{y})= f(\vect{x}) + g(\vect{z}) + \vect{y}^T (A \vect{x} + B \vect{z} - \vect{b}) + \frac{\rho}{2} \norm{A \vect{x} + B \vect{z} - \vect{b}}
+\end{align}
+and by iterating over two minimization problems as in the following loop:
+\begin{align}
+ \vect{x}^{k+1} &\in \text{argmin} \mathcal{L}_{\rho}(\vect{x},\vect{z}^k,\vect{y}^k) \\
+ \vect{z}^{k+1} &\in \text{argmin} \mathcal{L}_{\rho}(\vect{x}^{k+1},\vect{z},\vect{y}^k) \\
+ \vect{y}^{k+1} &= \vect{y}^{k} + \rho ( A \vect{x}^{k+1} + B \vect{z}^{k+1} - \vect{b} )
+ \label{eq:admm_iters}
+\end{align}
+Although the convergence is fast in the first iterations, it tends to deteriorate later as in fixed-point iterations; however in practical scenarios where loose tolerances can be accepted, the method proves to be very efficient and robust.
 
-The associated augmented lagragian is then used to build a equality constrained QP problem that is in the form:
+In order to rewrite \eqref{eq:ChronoCCP_min} as a sum of two functions as in \eqref{eq:admm}, we introduce the auxiliary variables 
+$(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}})$, 
+we state the $\vect{\gamma}_\epsilon \in \Upsilon$ constraint by adding a non-smooth penalty function given by the indicator function 
+$\mathcal{I}_\Upsilon (\vect{\gamma}_\epsilon)$ 
+where $\mathcal{I}_\Upsilon(\vect{\gamma}_\epsilon)=0$ for $\vect{\gamma}_\epsilon \in \Upsilon$ and $=\infty$ otherwise, another indicator function 
+$\mathcal{I}_{\vect{\gamma}_\epsilon = \vect{z}}(\vect{\gamma}_\epsilon,\vect{z})$,
+and finally we have
 \begin{subequations}
 	\begin{align}
-	\text{min} \quad & \frac{1}{2} \tilde{\vect{v}}^T M \tilde{\vect{v}} - \vect{k}^T\tilde{\vect{v}} + \frac{\sigma}{2}\norm{\tilde{\vect{v}}-\vect{v}^k}^2 + \frac{\rho}{2}\norm{\tilde{\vect{u}_\epsilon}-\vect{u}_\epsilon^k + \frac{\bar{\vect{\gamma}}_\epsilon}{\rho}}^2\\
-	\text{s.t.} \quad & \bar{D}_{\epsilon}^T \tilde{\vect{v}} + \vect{b}_\epsilon  = \vect{u}_\epsilon
+    \text{min} \quad & \frac{1}{2} \tilde{\vect{\gamma}}_\epsilon^T N \tilde{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \tilde{\vect{\gamma}}_\epsilon  +  \mathcal{I}_{\tilde{\vect{\gamma}}_\epsilon = \tilde{\vect{z}}}(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}) +  \mathcal{I}_\Upsilon(\vect{\gamma}_\epsilon)  \\
+	  \text{s.t.} \quad & (\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}})  =  (\vect{\gamma}_\epsilon,\vect{z})
 	\end{align}
+	\label{eq:admm_mod}
 \end{subequations}
-whose KKT conditions can be found as:
-\begin{equation}
-    \begin{bmatrix}
-        M + \sigma I_n & \bar{D}_{\epsilon} \\
-        \bar{D}_{\epsilon}^T & -\rho^{-1} I_m
-    \end{bmatrix}
-    \begin{bmatrix}
-        \tilde{\vect{v}}^{k+1} \\
-        \vect{\nu}^{k+1}
-    \end{bmatrix}
-    =
-    \begin{bmatrix}
-        \vect{k} + \sigma \vect{v}^k \\
-        \vect{b}_\epsilon - \vect{u}_\epsilon^k + \rho^{-1}\bar{\vect{\gamma}}_\epsilon^k
-    \end{bmatrix}
-\end{equation}
 
-then we can update variables as
+We can write the augmented Lagrangian introducing two step size parameters $\sigma$ and $\rho$ and two vector of multipliers $\vect{w}$ and $\vect{y}$, obtaining:
+\begin{align}
+\mathcal{L}_{\sigma,\rho} \left((\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}),(\vect{\gamma}_\epsilon,\vect{z}),(\vect{y},\vect{w})\right) &= 
+\frac{1}{2} \tilde{\vect{\gamma}}_\epsilon^T N \tilde{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \tilde{\vect{\gamma}}_\epsilon  
++  \mathcal{I}_{\tilde{\vect{\gamma}}_\epsilon = \tilde{\vect{z}}}(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}) 
++  \mathcal{I}_\Upsilon(\vect{\gamma}_\epsilon) \nonumber \\
++ \vect{w}^T (\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon) 
+&+ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon} 
++ \vect{y}^T (\tilde{\vect{z}} - \vect{z}) 
++ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z}}
+\end{align}
+that is also, using the property $\vect{y}^T\vect{r} + \frac{\rho}{2}\norm{\vect{r}} = \frac{\rho}{2}\norm{\vect{r}+\frac{1}{\rho} \vect{y}} - \frac{1}{2\rho} \norm{y}$, the following
+\begin{align}
+\mathcal{L}_{\sigma,\rho} \left((\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}),(\vect{\gamma}_\epsilon,\vect{z}),(\vect{y},\vect{w})\right) &= 
+\frac{1}{2} \tilde{\vect{\gamma}}_\epsilon^T N \tilde{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \tilde{\vect{\gamma}}_\epsilon  
++  \mathcal{I}_{\tilde{\vect{\gamma}}_\epsilon = \tilde{\vect{z}}}(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}) 
++  \mathcal{I}_\Upsilon(\vect{\gamma}_\epsilon) \nonumber \\
+&+ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon + \frac{1}{\sigma} \vect{w}} 
+- \frac{1}{2\sigma} \norm{w}
++ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z} + \frac{1}{\rho} \vect{y}}
+- \frac{1}{2\rho} \norm{y}
+\end{align}
+
+The first step of ADMM requires to compute 
+\[
+(\tilde{\vect{\gamma}}_\epsilon^{k+1},\tilde{\vect{z}}^{k+1}) = \text{argmin} \mathcal{L}_{\sigma,\rho} \left((\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}),(\vect{\gamma}_\epsilon^k,\vect{z}^k),(\vect{y}^k,\vect{w}^k)\right)
+\]. 
+This can be simplified remembering that $\vect{w}^k$ will always be zero, that some terms are constant and can be left out, and that the $\mathcal{I}_{\tilde{\vect{\gamma}}_\epsilon = \tilde{\vect{z}}}(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}})$ term can be elided to turn finally the unconstrained $\text{argmin}$ into the equality constrained optimization problem:
 \begin{subequations}
 	\begin{align}
-	\tilde{\vect{u}}_\epsilon^{k+1} &= \vect{u}_\epsilon^k - \rho^{-1}(\vect{\nu}^{k+1} + \bar{\vect{\gamma}}_\epsilon^k)\\
-	\vect{v}^{k+1} &= \alpha \tilde{\vect{v}}^{k+1} + (1-\alpha) \vect{v}^k\\
-	\vect{u}_\epsilon^{k+1} &= \Pi_\mathcal{K}( \alpha \tilde{\vect{u}_\epsilon}^{k+1} + (1-\alpha) \vect{u}_\epsilon^k + \rho^{-1} \bar{\vect{\gamma}}_\epsilon^k ) \\
-	\bar{\vect{\gamma}}_\epsilon^{k+1} &= \bar{\vect{\gamma}}_\epsilon^k + \rho (  \alpha \tilde{\vect{u}_\epsilon}^{k+1} + (1-\alpha) \vect{u}_\epsilon^k - \vect{u}_\epsilon^{k+1} )
+    \text{min} \quad  &  \frac{1}{2} \tilde{\vect{\gamma}}_\epsilon^T N \tilde{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \tilde{\vect{\gamma}}_\epsilon  
++ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon^k}
++ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z}^k + \frac{1}{\rho} \vect{y}^k}
+	  \text{s.t.} \quad &  \tilde{\vect{\gamma}} = \tilde{\vect{z}}
 	\end{align}
+	\label{eq:admm_1a}
+\end{subequations}
+%
+For such problem, the KKT conditions lead to the following linear problem:
+\begin{subequations}
+	\begin{align}
+    \left[ N + (\sigma+\rho) I \right] \tilde{\vect{\gamma}}_\epsilon = (\sigma+\rho) \vect{\gamma}_\epsilon^k - \vect{r} - \vect{y}^k
+	\end{align}
+	\label{eq:admm_1b}
+\end{subequations}
+%
+The linear system \eqref{eq:admm_1b} can be solved as it is, but in our case it would be better to exploit the fact that the Schur matrix $N$ is a product $D_\epsilon^T H^{-1} D_\epsilon$. We would like to avoid computing $H^{-1}$, even storing a precomputed inverse for all iterations would be unpractical because often dense (except when $H$ is a diagonal mass matrix $M$). So we propose to replace \eqref{eq:admm_1b} with the equivalent saddle point problem:
+\begin{subequations}
+	\begin{align}
+    \begin{bmatrix}
+		 H   & D_\epsilon \\
+		 D^T & (\sigma+\rho) I
+		\end{bmatrix}
+		\begin{Bmatrix}
+		 \vect{v}    \\
+		 -\tilde{\vect{\gamma}}_\epsilon^{k+1} 
+		\end{Bmatrix}
+		=
+		\begin{Bmatrix}
+		 \vect{k} \\
+		 \vect{b}_\epsilon + (\sigma+\rho) \vect{\gamma}_\epsilon^k-\vect{y}^k 
+		\end{Bmatrix}
+	\end{align}
+	\label{eq:admm_1c}
+\end{subequations}
+that, even if it introduces an auxiliary variable $\vect{v}$, is very sparse and does not require computing any $H^{-1}$.
+
+A remarkable side effect of this approach is that its auxiliary variable $\vect{v}$ is also the velocity term in the original MDI 
+\eqref{eq:ChronoMCCP}, so one does not need to compute it as $\vect{v}=H^{-1}(\vect{k} + D_\epsilon \vect{\gamma}_\epsilon )$ after the iteration converged because it is a byproduct of the linear solver.
+
+The second step of ADMM is a minimization problem too, but it can be rephrased in terms of a projection on the separable set $\Upsilon$ of the friction cones, note that this is an operation that requires a very inexpensive and easily parallelizable operation. 
+
+Using these results, and adding a Krasnoselskii-Mann relaxation factor $\alpha \in(0,2]$, one obain the final algorithm:
+%
+\begin{subequations}
+	\begin{align}
+    \begin{bmatrix}
+		 H   & D_\epsilon \\
+		 D^T & (\sigma+\rho) I
+		\end{bmatrix}
+		\begin{Bmatrix}
+		 \vect{v}    \\
+		 -\tilde{\vect{\gamma}}_\epsilon^{k+1}
+		\end{Bmatrix}
+		&=
+		\begin{Bmatrix}
+		 \vect{k} \\
+		 \vect{b}_\epsilon + (\sigma+\rho) \vect{\gamma}_\epsilon^k-\vect{y}^k 
+		\end{Bmatrix}
+		\\
+		\vect{\gamma}^{k+1} &=\tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{\gamma}_\epsilon^k \\
+		\vect{z}^{k+1} &= \Pi_\Upsilon \left( \alpha \vect{\gamma}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k  - \frac{1}{\rho} \vect{y}^k \right) \\
+		\vect{y}^{k+1} &= \vect{y}^k + \rho \left( \alpha \vect{\gamma}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k - \vect{z}^{k+1} \right) \\
+		\vect{r}_{\text{prim}} &= \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1} \\
+		\vect{r}_{\text{dual}} &= N \vect{\gamma}_\epsilon^{k+1}+\vect{r}-\vect{y}^{k+1} 
+	\end{align}
+	\label{eq:admm_final}
 \end{subequations}
 
-...
-
-
-
+The iteration is terminated when $\vect{r}_{\text{prim}}$ and $\vect{r}_{\text{dual}}$ fall under prescribed tolerances. We remark that setting proper values for $\rho$ is of fundamental importance in order to obtain a good speed of convergence. In most cases one can use heuristics and adjust $\rho$ only one or two times during the iterations, hence allowing to reuse the factorization of the linear system. Instead, $\sigma$ acts similarly to a regularization term, and can be left to low values anyway.
 
 
 \section{Results}

@@ -313,7 +313,7 @@ The linear system \eqref{eq:admm_1b} can be solved as it is, but in our case it 
 	\begin{align}
     \begin{bmatrix}
 		 H   & D_\epsilon \\
-		 D^T & (\sigma+\rho) I
+		 D^T & -(\sigma+\rho) I
 		\end{bmatrix}
 		\begin{Bmatrix}
 		 \vect{v}    \\
@@ -340,7 +340,7 @@ Using these results, and adding a Krasnoselskii-Mann relaxation factor $\alpha \
 	\begin{align}
     \begin{bmatrix}
 		 H   & D_\epsilon \\
-		 D^T & (\sigma+\rho) I
+		 D^T & -(\sigma+\rho) I
 		\end{bmatrix}
 		\begin{Bmatrix}
 		 \vect{v}    \\

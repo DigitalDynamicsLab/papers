@@ -304,7 +304,7 @@ This can be simplified remembering that $\vect{w}^k$ will always be zero, that s
 %
 For such problem, the KKT conditions lead to the following linear problem:
 \begin{align}
-    \left[ N + (\sigma+\rho) I \right] \tilde{\vect{\gamma}}_\epsilon = (\sigma+\rho) \vect{\gamma}_\epsilon^k - \vect{r} - \vect{y}^k
+    \left[ N + (\sigma+\rho) I \right] \tilde{\vect{\gamma}}_\epsilon = \sigma \vect{\gamma}_\epsilon^k + \rho \vect{z}^k - \vect{r} - \vect{y}^k
 		\label{eq:admm_1b}
 \end{align}
 %
@@ -322,7 +322,7 @@ The linear system \eqref{eq:admm_1b} can be solved as it is, but in our case it 
 		=
 		\begin{Bmatrix}
 		 \vect{k} \\
-		 -\vect{b}_\epsilon + (\sigma+\rho) \vect{\gamma}_\epsilon^k-\vect{y}^k 
+		 -\vect{b}_\epsilon + \sigma \vect{\gamma}_\epsilon^k + \rho \vect{z}^k -\vect{y}^k 
 		\end{Bmatrix}
 	\end{align}
 	\label{eq:admm_1c}
@@ -349,7 +349,7 @@ Using these results, and adding a Krasnoselskii-Mann relaxation factor $\alpha \
 		&=
 		\begin{Bmatrix}
 		 \vect{k} \\
-		 -\vect{b}_\epsilon + (\sigma+\rho) \vect{\gamma}_\epsilon^k-\vect{y}^k 
+		 -\vect{b}_\epsilon + \sigma \vect{\gamma}_\epsilon^k +\rho \vect{z}^k - \vect{y}^k 
 		\end{Bmatrix}
 		\\
 		\vect{\gamma}^{k+1}_\epsilon &=\tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{\gamma}_\epsilon^k \\

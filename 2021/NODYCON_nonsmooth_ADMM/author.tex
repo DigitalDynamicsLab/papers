@@ -353,8 +353,8 @@ Using these results, and adding a Krasnoselskii-Mann relaxation factor $\alpha \
 		\end{Bmatrix}
 		\\
 		\vect{\gamma}^{k+1}_\epsilon &=\tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{\gamma}_\epsilon^k \\
-		\vect{z}^{k+1} &= \Pi_\Upsilon \left( \alpha \vect{\gamma}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k  - \frac{1}{\rho} \vect{y}^k \right) \\
-		\vect{y}^{k+1} &= \vect{y}^k + \rho \left( \alpha \vect{\gamma}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k - \vect{z}^{k+1} \right) \\
+		\vect{z}^{k+1} &= \Pi_\Upsilon \left( \alpha \tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k  + \frac{1}{\rho} \vect{y}^k \right) \\
+		\vect{y}^{k+1} &= \vect{y}^k + \rho \left( \alpha \tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k - \vect{z}^{k+1} \right) \\
 		\vect{r}_{\text{prim}} &= \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1} \\
 		\vect{r}_{\text{dual}} &= N \vect{\gamma}_\epsilon^{k+1}+\vect{r}-\vect{y}^{k+1} 
 	\end{align}

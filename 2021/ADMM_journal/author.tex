@@ -1,0 +1,505 @@
+%%
+%% This document created by A.Tasora
+%%
+
+\documentclass[1p]{elsarticle}
+
+
+% to typeset URLs, URIs, and DOIs
+\usepackage{url}
+%\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{hyperref}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{cleveref}
+\usepackage{bm}
+\usepackage{mathtools}
+\usepackage{siunitx}
+\usepackage{subfig}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{tabularx}
+%\usepackage{algorithm}
+%\usepackage{algpseudocode}
+\usepackage[ruled,vlined, linesnumbered]{algorithm2e}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage[title]{appendix}
+\usepackage{empheq}
+
+
+\def\UrlFont{\rmfamily}
+
+%% A.TASORA CUSTOM TEX COMMANDS:
+%%
+ 
+\def\avect#1{{\boldsymbol{#1}}}
+\def\amatr#1{{\boldsymbol{#1}}}
+
+\newcommand{\vect}[1]{\bm{#1}}
+\newcommand{\mat}[1]{#1}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+
+\begin{document}
+
+
+%%
+%% TITLE
+%%
+
+
+\title{Solving non smooth dynamics using ADMM}
+
+%\author{Alessandro Tasora \\ alessandro.tasora@unipr.it}
+\author{Alessandro Tasora}
+\ead{alessandro.tasora@unipr.it}
+\author{Simone Benatti}
+\ead{simone.benatti@studenti.unipr.it}
+\author{Dario Mangoni}
+\ead{dario.mangoni@unipr.it}
+\address{Universit\`a degli Studi di Parma, \\Dpt. of Engineering and Architecture\\Parco Area delle Scienze, 181/A, 43124 Parma, Italy }
+
+% \affil[]{Universit\`a degli Studi di Parma, \\ 
+% Dpt. of Engineering and Architecture, Parco Area delle Scienze, 181/A, 43124 Parma, Italy 
+% \footnote{E-mail addresses: alessandro.tasora@unipr.it (A. Tasora), \\ simone.benatti@studenti.unipr.it (S. Benatti) dario.mangoni@studenti.unipr.it (D. Mangoni), rinaldo.garziera@unipr.it (R.Garziera).}
+% }
+
+
+\begin{abstract} 
+This work discusses an efficient formulation of a geometrically exact three-dimensional beam which can be used in dynamical simulations involving large displacements, collisions and non-linear materials. To this end, we base our model on the shear-flexible Cosserat rod theory and we implement it in the context of Isogeometric Analysis (IGA). 
+According to the IGA approach, the centerline of the beam is parameterized using splines; in our work the rotation of the section is parameterized by a spline interpolation of quaternions, and time integration of rotations is performed using the exponential map of quaternions. Aiming at an efficient and robust simulation of contacts, we propose the adoption of a non-smooth dynamics formulation based on differential-variational inequalities. 
+The model has been implemented in an open-source physics simulation library that can simulate actuators, finite elements, rigid bodies, constraints, collisions and frictional contacts. 
+This beam model has been tested on various benchmarks in order to assess its validity in non-linear static and dynamic analysis; in all cases the model behaved consistently with theoretical results and experimental data. 
+\end{abstract}
+
+\begin{keyword}
+ADMM \sep non-smooth dynamics \sep contact
+\end{keyword}
+
+
+\maketitle              % typeset the title of the contribution
+
+\begin{abstract}
+We propose to use the Alternating Direction Method of Multipliers (ADMM) for solving the variational inequality that arises in non-smooth contact problems in multibody simulations. The ADMM method is based on simple computational primitives and offers good convergence properties especially for scenarios where loose tolerance on the precision can be accepted, thus making it attractive also for real-time applications. The method scales well with the problem size and require a small number of tuning parameters. Differently from other methods known in literature, such as fixed point iterations, it can easily handle problems that mix finite elements and rigid bodies, and it is only marginally affected by odd mass ratios or ill-posed problems. Another attractive feature is that it can be easily warm-started.
+\end{abstract}
+%
+\begin{keyword}
+ADMM \sep non-smooth dynamics \sep contact
+\end{keyword}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Introduction}
+
+Following the seminal works by Moreau 
+\cite{mor88,Jean1992} 
+most formulations for non-smooth dynamical problems are based on Measure Differential Inclusions (MDI): just like differential inclusions they allow set-valued force laws (such as the Coulomb-Amontons dry friction model) but also generalize to the case where velocity is assumed to be a possibly discontinuous function of bounded variation in order to allow impulsive events.
+
+These problems can be solved by means of special time stepping methods that offer superior robustness and stability at the cost of solving a complementarity problem, or more in general a Variational Inequality (VI), per each time step
+ \cite{acary2008numerical}. 
+In this context, unknowns to be solved are velocity measures and reaction impulses at contact points and at joints: in cases of many parts with lot of frictional contacts, the large dimension of the VI could lead to a bottleneck in the time stepping process. This stimulated lot of research on efficient numerical methods in the last three decades.  
+
+One of the former approaches, presented in 
+\cite{StTr95}  % LCP solved via Lemke
+, was based on solving a Linear Complementarity Problem (LCP) per each time step. LCPs are sub cases of VIs, for whom a direct method (Lemke algorithm) does exist. However, direct LCP solvers offer exact solution at the cost of very expensive pivoting sub iterations that scale badly with increasing number of unknowns, and for these reason they are not much used nowadays.
+
+On the other hand, approximate but efficient methods based on fixed-point iterations became popular in the area of real-time simulators and robotics \cite{Bender2014}.
+In most cases they are based on stationary methods like Gauss-Seidell or Jacobi iterations interleaved with projections on friction cones. They can be used to solve the LCP or the Cone Complementarity Problem (CCP), another special case of the VI in which the multibody contact problem can be formulated.
+Attempts were made in order to parallelize them and to increase their convergence, such as over-relaxation, Krasnoselskii-Mann smoothing and warm starting, 
+\cite{massSplittingRichard2012,TasoraAnitescuCMAME10} % P-GS iteration
+but in general they perform poorly when there are odd mass ratios, and when articulated mechanisms such as robots are added to the scenarios - in those cases convergence often stalls, and if the iteration is prematurely truncated, reaction impulses are badly estimated and mechanisms fall apart or bend, and objects might interpenetrate. 
+
+Another option is to solve the CCP as an optimization problem, using first-order optimization methods such as 
+the Nesterov accelerated projected gradient descend  
+\cite{hammadTOG2015}
+or the Barzilai-Borwein spectral projected gradient
+\cite{heynIJNME2013}. These methods are based on a simple projection operator,  matrix-by-vector multiplications and inner products. Their convergence is better than for fixed points iterations, however they share with them the following issue: that they often require the building of a Delassus operator, a matrix that is easy to compute in efficient (factored and sparse) format if diagonal masses are used because these can be easily inverted, but hard to handle if finite elements are added to the problem, because they introduce stiffness and damping matrices whose inverse would be needed as well.
+
+A further class of solvers is represented by non-smooth newton methods, such as the one presented in 
+\cite{Macklin2019} % Non-smooth Newton Method
+, that assume a generic Nonlinear Complemetarity Problem (NCP), again a sub case of a VI, and represent the NCP complementarity constraints using non-smooth functions like the Fisher-Burmeister function. A generalized non-smooth Newton method can be used to find the zero of the functions, at the cost of solving a linear system per each iteration.
+
+Under mild assumptions, the VI can be stated as a convex CCP, that can be also cast as an optimization problem, namely a Quadratic Program (QP) with convex constraints \cite{anitescuTasora2008}. For such a class of optimization problems, one can use Interior Point Methods (IPMs), a class of solvers that share some similarities with the above mentioned non-smooth Newton methods - for example the solution of a saddle-point linear system is required at each iteration. IPMs offer the best theoretical convergence. However, their implementation is quite intricate, and despite the encouraging theoretical properties, in practice they do not scale well for large problems. Also, there are no reliable ways to warm-start them
+\cite{Mangoni2018}
+.
+
+The Alternating Direction Method of Multipliers (ADMM) has been proposed in the 1970s 
+\cite{Glowinski75} % [ ADMM invention ]
+\cite{Gabay1976} % [ ADMM invention ]
+as a practical way to solve constrained optimization problems by iterating over the minimization of two (not necessarily differentiable) objectives.
+ADMM introduces auxiliary variables and cast the original problem as the minimization of a separable objective subject to a linear constraint between the original variables and the auxiliary variables. With a proper choice of auxiliary variables, the minimization of the separable function is obtained iterating on two distinct minimization steps of lower complexity. The method iterates updating primal variables, auxiliary variables and dual variables similarly to a fixed point iteration: as such, they compares less favorably to IPMs if one is interested in convergence to high precision, however recent developments showed that in practical scenarios they offer superior speed, scalability and robustness, moreover their structure map well into parallel computing architectures
+ \cite{Boyd2011}. % [ ADMM general theory and development ].
+These positive properties triggered a recent revival of ADMM and similar operator-splitting methods even as alternatives to IPMs, especially in distributed convex optimization with large-scale problems where moderate precision is acceptable
+\cite{Cannon2019}. % [COSMO  conic operator splitting method for large convex problems].
+
+ADMM methods have been used in many fields, for instance computer graphics 
+ \cite{Zhang2019}
+, computational fluid dynamics
+ \cite{Gregson2014} % [ ADMM and fluid simulation, inverse problems ]
+, simulation of deformable structures 
+ \cite{Overby2017} % [ ADMM projective dynamics hyperelastic models ]
+and contact dynamics 
+ \cite{Daviet2020} % [ ADMM thin objects frictional contact ]
+, to name a few.
+
+
+Recent developments addressed the possibility of accelerating the ADMM method.
+In 
+ \cite{Goldfarb2013} % [ ADMM with acceleration, both convex (non-strongly-convex require step skipping), one differentiable]
+an acceleration scheme has been proposed for special cases of symmetric ADMMs, and assuming that one of the two objectives is differentiable.
+%
+In 
+ \cite{Goldstein2014} % [ ADMM and AMA with Nesterov. Convergence ok if both problems are strongly convex (non-strongly-convex require restarting), one is quadratic ].
+the Nesterov acceleration method has been proposed for problems where at least one of the two objectives is quadratic, and under the assumption that both objectives are strongly convex; if the latter assumption is not guaranteed, restarting strategies are needed. 
+%
+In 
+ \cite{Kadkhodaie2015} %  [ A2DM2 accelerated ADMM, strongly convex ]
+a similar acceleration method has been proposed, with $\mathcal{O}(\frac{1}{k^2})$ convergence rate, but without the assumption that one of the objectives must be quadratic.
+%
+Other types of improvements, based on the Anderson fixed point acceleration, have been put forward in 
+ \cite{Zhang2019} % [ ADMM + Anderson acceleration, computergraphics ].
+ \cite{Ouyang2020} % [ ADMM + Anderson acceleration, using Douglas-Rachford splitting, computergraphics ]
+, showing high performance in computer graphics applications.
+
+Recent developments also focused on the possibility of parallelizing the ADMM iterations on GPU and parallel architectures
+\cite{Schubiger2020} % [ GPU implementation of ADMM | no need to compute residuals each iteration | krylov solver each iteration ].
+.
+
+In
+\cite{Stellato2020} % [OSQP: an operator splitting solver for quadratic programs].
+a specialized ADMM method for quadratic problems with conic constraints has been presented: on the top of this method we develop a solver that can exploit the nature of non-smooth dynamical problems. An attractive property of such ADMM is that it requires the solution of a linear system per each iteration, but unlike IPMs, such linear system most often remains unchanged during the iterations, so a factorization can be reused multiple times with a great benefit in terms of speed.
+
+In our embodiment, unknowns are primal variables (velocity measures) and dual variables (impulses in contact points and joints), the convex cone constraints stem from the Coulomb friction law, and the system matrix includes terms from the mass matrices and from the tangent stiffness/damping matrices (hence it is sparse, but not necessarily diagonal).
+
+This paper will present a model for the non-smooth dynamics, it will show how to cast it as a QP with convex conic constraint, it will present the ADMM method to solve it, it will discuss practical implementation details and then it will show benchmarks.
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+
+\section{The non-smooth multibody model}
+
+Different time stepping schemes have been proposed for MDIs, here we refer to the one discussed \cite{TasoraAnitescuCMAME10} without lack of generality. After regularization and convexification and discretization, the MDIs leads to a major numerical bottleneck to be solved at each time step: a (mixed) CCP with unknowns $\vect{v}$ and $\vect{\gamma}_\epsilon$: 
+
+\begin{subequations}
+	\begin{empheq}[left=\empheqlbrace]{align}
+    M \vect{v} - \vect{k} - D_\epsilon \vect{\gamma}_\epsilon &= 0 \\
+    D_{\epsilon}^T \vect{v}  + \vect{b}_\epsilon &= \vect{u}_\epsilon\\
+    -\Upsilon^{\circ} \ni \vect{u}_\epsilon  \quad \bot &\quad  \vect{\gamma}_\epsilon \in \Upsilon
+	\end{empheq}
+	\label{eq:ChronoMCCP}
+\end{subequations}
+
+where 
+\begin{itemize}
+		\item unknown $\vect{v}$ is the speed at the end of the time step, 
+		\item unknown $\vect{\gamma}_\epsilon$ is the reaction in contacts and bilateral joints, a vector-signed measure with Lebesgue decomposition in atomic parts (impacts) and continuous parts (continuous reactions),
+    \item $M$ is a positive definite, block diagonal matrix containing masses and inertia tensors of the bodies
+    \item $D_\epsilon$ is a sparse matrix, the transpose jacobian of all constraints
+    \item $\vect{k}$ is a vector containing terms proportional to applied forces, among other things 
+    \item $\vect{b}$ is a vector containing constraint stabilization terms, among other things
+    \item $\Upsilon$ is the Cartesian product of all cones of admissible constraint forces, $\Upsilon = \bigtimes_i \Upsilon_i$
+    \item if a frictional contact is added, $\Upsilon_i \subset \mathbb{R}^3$ is a second order Lorentz cone with aperture proportional to friction coefficient
+    \item if a bilateral constraint is added, $\Upsilon_i = \mathbb{R}$ and $\Upsilon^\circ_i = \{0\}$
+    \item if a unilateral constraint is added, $\Upsilon_i = \mathbb{R}^+$ and $\Upsilon^\circ_i = \mathbb{R}^-$
+    \item $\Upsilon^{\circ}$ is the polar cone, opposite of the dual cone, i.e. $\Upsilon^{*} = -\Upsilon^\circ$.
+\end{itemize}
+
+For more details on the model we refer to 
+\cite{negrutSerbanTasoraJCND2017}. % Posing Multibody Dynamics with Friction and Contact as a Differential Complementarity Problem
+
+Introducing the Schur complement 
+\[
+N=D_{\epsilon}^T M^{-1} D_{\epsilon}
+\]
+and the vector
+\[
+\vect{r}_\epsilon = D_{\epsilon}^T M^{-1} \vect{k} + \vect{b}_\epsilon
+\]
+such that
+\[
+\vect{u}_\epsilon = N \vect{\gamma}_\epsilon + \vect{r}_\epsilon \, , 
+\]
+one can also write the problem as the following CCP:
+\begin{align}
+    -\Upsilon^{\circ} \ni  N \vect{\gamma}_\epsilon + \vect{r}_\epsilon 
+    \quad \bot \quad  
+    \vect{\gamma}_\epsilon \in \Upsilon
+	\label{eq:ChronoCCP}
+\end{align}
+
+This CCP corresponds exactly to a first order optimality condition of a convex quadratic program:
+\begin{subequations}
+	\begin{empheq}[box=\fbox]{align}
+	\text{min} \quad & \frac{1}{2} \vect{\gamma}_\epsilon^T N \vect{\gamma}_\epsilon + \vect{r}^T_\epsilon \vect{\gamma}_\epsilon \\
+	\text{s.t.} \quad & \vect{\gamma}_\epsilon \in \Upsilon
+	\end{empheq}
+	\label{eq:ChronoCCP_min}
+\end{subequations}
+%
+and in fact, the CCP \eqref{eq:ChronoCCP} can be written in the more conventional language of the KKT optimality conditions on \textit{dual variables} $\vect{y}$ multipliers, for $\vect{y}=-\vect{u}_\epsilon$ and \textit{primal variables} $\vect{\gamma}_\epsilon$:
+\begin{subequations}
+	\begin{align}
+    N \vect{\gamma}_\epsilon + \vect{r}_\epsilon + I \vect{y} &= \vect{0} \\
+    \vect{\gamma}_\epsilon &= \vect{z} \\
+    \Upsilon \ni \vect{z}  \quad \bot &\quad \vect{y} \in \Upsilon^\circ  
+	\end{align}
+	\label{eq:ChronoCCP_kkt}
+\end{subequations}
+After the convex program \eqref{eq:ChronoCCP_min} is solved by ADMM, one can compute $\vect{v} = M^{-1}( \vect{k} + \bar{D}_\epsilon \vect{\gamma}_\epsilon)$ with a quick postprocessing step. 
+
+The ADMM method in \cite{Stellato2020} can be used to solve problems in the form
+\begin{subequations}
+	\begin{align}
+    P \vect{x} + \vect{q} + A^T \vect{y} &= \vect{0} \\
+    A \vect{x} - \vect{b} &= \vect{z} \\
+    \mathcal{C} \ni \vect{z}  \quad \bot &\quad \vect{y} \in \mathcal{N}_{C}(\vect{z})
+	\end{align}
+	\label{eq:OQSP_kkt}
+\end{subequations}
+and one can see that \eqref{eq:ChronoCCP_kkt} is a special case of \eqref{eq:OQSP_kkt} where $A=I$, $P=N$, $\mathcal{C}=\Upsilon$, $\vect{q}=\vect{r}$, $\vect{x}=\vect{\gamma}_\epsilon$, $\vect{b}=\vect{0}$, where some optimizations can take place because of the structure of our problem.
+
+% TO ADD IN EXTENDED VERSION
+%The ADMM method requires a fast way to perform a projection $\Pi_{\Upsilon}$ onto the friction cones $\Upsilon$ and a fast way to solve a linear problem with the matrix $A$. 
+
+We remark that the ADMM method just makes the assumption of $\Upsilon$ being convex, so the problem can be generalized to $\vect{\gamma}_\epsilon \in \mathcal{C}$ where $\mathcal{C}$ is a generic convex set and at the same time we assume an associated 
+ \footnote{Not all dissipative constitutive models are associated, for example in some computational plasticity models the plastic flow might deviate respect to the normal to the yeld surface, and the Coulomb contact model itself is not associated -in fact the contact velocity $\vect{u}$ can range into a wider cone than the polar of the friction cone, but our DVI model compensates fur such effect. We will assume associated models heretofore, and we do not deal with non-associated models to avoid additional complexity for the moment.} 
+flow $\vect{u}_\epsilon \in - \mathcal{N}_{C}(\vect{\gamma}_\epsilon)$. For instance, $\mathcal{C}$ could be a capped friction cone to represent plasticization of contacts, or a cone translated downward to represent possible adhesion in contact up to a threshold, or the Von Mises yield region if $\vect{\gamma}_\epsilon$ represent stresses in finite elements undergoing plasticization. 
+
+Also, in sake of highest generality, in presence of finite elements one might need to use tangent stiffness matrices $K$ and damping matrices $D$ to accommodate an implicit integration scheme for stiff elements, and this means that the Schur complement would be computed as $N=D_{\epsilon}^T H^{-1} D_{\epsilon}$. Here $H$, taking the place of the original $M$ matrix, is rather a linear combination of $M$, $K$, $D$ (depending on the integration scheme) and in general is not diagonal anymore. 
+
+% TO ADD IN EXTENDED VERSION
+%This means that one cannot easily compute the Schur complement $N$, even in factored form, and this has some consequences on the implementation of the ADMM, that in fact we will rewrite in an unrolled form.
+
+
+\section{The ADMM solver}
+
+For variables $(\vect{x},\vect{z}) \in \mathbb{R}^m \times \mathbb{R}^n$, the ADMM methods solve constrained optimization problems with separable structure
+\begin{subequations}
+	\begin{align}
+    \text{min} \quad  & f(\vect{x}) + g(\vect{z}) \\
+	  \text{s.t.} \quad &  A \vect{x} + B \vect{z} - \vect{b} = \vect{0}
+	\end{align}
+	\label{eq:admm}
+\end{subequations}
+by introducing an augmented Lagrangian
+\begin{align}
+\mathcal{L}_{\rho}(\vect{x},\vect{z},\vect{y})= f(\vect{x}) + g(\vect{z}) + \vect{y}^T (A \vect{x} + B \vect{z} - \vect{b}) + \frac{\rho}{2} \norm{A \vect{x} + B \vect{z} - \vect{b}}
+\end{align}
+and by iterating over two minimization problems as in the following loop:
+\begin{align}
+ \vect{x}^{k+1} &\in \text{argmin} \mathcal{L}_{\rho}(\vect{x},\vect{z}^k,\vect{y}^k) \label{eq:lag1}\\
+ \vect{z}^{k+1} &\in \text{argmin} \mathcal{L}_{\rho}(\vect{x}^{k+1},\vect{z},\vect{y}^k) \label{eq:lag2}\\
+ \vect{y}^{k+1} &= \vect{y}^{k} + \rho ( A \vect{x}^{k+1} + B \vect{z}^{k+1} - \vect{b} )
+ \label{eq:admm_iters}
+\end{align}
+Although the convergence is fast in the first iterations, it tends to deteriorate later as in fixed-point iterations; however in practical scenarios where loose tolerances can be accepted, the method proves to be very efficient and robust.
+
+The performance of ADMM depends on the efficiency of the updates in \eqref{eq:lag1} and \eqref{eq:lag2}. We will design the method such that the step \eqref{eq:lag2} will correspond to a very efficient projection onto a cone with separable structure, whereas the only bottleneck will be \eqref{eq:lag1}, corresponding to a quadratic optimization to be solved with a linear system.
+
+In order to rewrite \eqref{eq:ChronoCCP_min} as a sum of two functions as in \eqref{eq:admm}, we introduce the auxiliary variables 
+$(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}})$, 
+we state the $\vect{\gamma}_\epsilon \in \Upsilon$ constraint by adding a non-smooth penalty function given by the indicator function 
+$\mathcal{I}_\Upsilon (\vect{\gamma}_\epsilon)$ 
+where $\mathcal{I}_\Upsilon(\vect{\gamma}_\epsilon)=0$ for $\vect{\gamma}_\epsilon \in \Upsilon$ and $=\infty$ otherwise, another indicator function 
+$\mathcal{I}_{\vect{\gamma}_\epsilon = \vect{z}}(\vect{\gamma}_\epsilon,\vect{z})$,
+and finally we have
+\begin{subequations}
+	\begin{align}
+    \text{min} \quad & \frac{1}{2} \tilde{\vect{\gamma}}_\epsilon^T N \tilde{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \tilde{\vect{\gamma}}_\epsilon  +  \mathcal{I}_{\tilde{\vect{\gamma}}_\epsilon = \tilde{\vect{z}}}(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}) +  \mathcal{I}_\Upsilon(\vect{\gamma}_\epsilon)  \\
+	  \text{s.t.} \quad & (\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}})  =  (\vect{\gamma}_\epsilon,\vect{z})
+	\end{align}
+	\label{eq:admm_mod}
+\end{subequations}
+
+We can write the augmented Lagrangian introducing two step size parameters $\sigma$ and $\rho$ and two vector of multipliers $\vect{w}$ and $\vect{y}$, obtaining:
+\begin{align}
+\mathcal{L}_{\sigma,\rho} \left((\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}),(\vect{\gamma}_\epsilon,\vect{z}),(\vect{y},\vect{w})\right) &= 
+\frac{1}{2} \tilde{\vect{\gamma}}_\epsilon^T N \tilde{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \tilde{\vect{\gamma}}_\epsilon  
++  \mathcal{I}_{\tilde{\vect{\gamma}}_\epsilon = \tilde{\vect{z}}}(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}) 
++  \mathcal{I}_\Upsilon(\vect{\gamma}_\epsilon) \nonumber \\
++ \vect{w}^T (\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon) 
+&+ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon} 
++ \vect{y}^T (\tilde{\vect{z}} - \vect{z}) 
++ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z}}
+\end{align}
+that is also, using the property $\vect{y}^T\vect{r} + \frac{\rho}{2}\norm{\vect{r}} = \frac{\rho}{2}\norm{\vect{r}+\frac{1}{\rho} \vect{y}} - \frac{1}{2\rho} \norm{\vect{y}}$, the following
+\begin{align}
+\mathcal{L}_{\sigma,\rho} \left((\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}),(\vect{\gamma}_\epsilon,\vect{z}),(\vect{y},\vect{w})\right) &= 
+\frac{1}{2} \tilde{\vect{\gamma}}_\epsilon^T N \tilde{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \tilde{\vect{\gamma}}_\epsilon  
++  \mathcal{I}_{\tilde{\vect{\gamma}}_\epsilon = \tilde{\vect{z}}}(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}) 
++  \mathcal{I}_\Upsilon(\vect{\gamma}_\epsilon) \nonumber \\
++ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon + \frac{1}{\sigma} \vect{w}} 
+&- \frac{1}{2\sigma} \norm{\vect{w}}
++ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z} + \frac{1}{\rho} \vect{y}}
+- \frac{1}{2\rho} \norm{\vect{y}}
+\end{align}
+
+The first step of ADMM requires to compute 
+\[
+(\tilde{\vect{\gamma}}_\epsilon^{k+1},\tilde{\vect{z}}^{k+1}) = \text{argmin} \mathcal{L}_{\sigma,\rho} \left((\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}),(\vect{\gamma}_\epsilon^k,\vect{z}^k),(\vect{y}^k,\vect{w}^k)\right)
+\] 
+This can be simplified remembering that $\vect{w}^k$ will always be zero, that some terms are constant and can be left out, and that the $\mathcal{I}_{\tilde{\vect{\gamma}}_\epsilon = \tilde{\vect{z}}}(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}})$ term can be elided to turn finally the unconstrained $\text{argmin}\mathcal{L}_{\sigma,\rho}$ into the equality constrained optimization problem:
+\begin{subequations}
+	\begin{align}
+    \text{min} \quad  &  \frac{1}{2} \tilde{\vect{\gamma}}_\epsilon^T N \tilde{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \tilde{\vect{\gamma}}_\epsilon  
++ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon^k}
++ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z}^k + \frac{1}{\rho} \vect{y}^k} \\
+	  \text{s.t.} \quad &  \tilde{\vect{\gamma}} = \tilde{\vect{z}}
+	\end{align}
+	\label{eq:admm_1a}
+\end{subequations}
+%
+For such problem, the KKT conditions lead to the following linear problem:
+\begin{align}
+    \left[ N + (\sigma+\rho) I \right] \tilde{\vect{\gamma}}_\epsilon = \sigma \vect{\gamma}_\epsilon^k + \rho \vect{z}^k - \vect{r} - \vect{y}^k
+		\label{eq:admm_1b}
+\end{align}
+%
+The linear system \eqref{eq:admm_1b} can be solved as it is, but in our case it would be better to exploit the fact that the Schur matrix $N$ is a product $D_\epsilon^T H^{-1} D_\epsilon$. We would like to avoid computing $H^{-1}$, even storing a precomputed inverse for all iterations would be unpractical because often dense (except when $H$ is a diagonal mass matrix $M$). So we propose to replace \eqref{eq:admm_1b} with the equivalent saddle point problem:
+\begin{subequations}
+	\begin{align}
+    \begin{bmatrix}
+		 H   & D_\epsilon \\
+		 D^T & -(\sigma+\rho) I
+		\end{bmatrix}
+		\begin{Bmatrix}
+		 \vect{v}    \\
+		 -\tilde{\vect{\gamma}}_\epsilon^{k+1} 
+		\end{Bmatrix}
+		=
+		\begin{Bmatrix}
+		 \vect{k} \\
+		 -\vect{b}_\epsilon + \sigma \vect{\gamma}_\epsilon^k + \rho \vect{z}^k -\vect{y}^k 
+		\end{Bmatrix}
+	\end{align}
+	\label{eq:admm_1c}
+\end{subequations}
+that, even if it introduces an auxiliary variable $\vect{v}$, is very sparse and does not require computing any $H^{-1}$.
+
+A remarkable side effect of this approach is that its auxiliary variable $\vect{v}$ is also the velocity term in the original MDI 
+\eqref{eq:ChronoMCCP}, so one does not need to compute it as $\vect{v}=H^{-1}(\vect{k} + D_\epsilon \vect{\gamma}_\epsilon )$ after the iteration converged because it is a byproduct of the linear solver.
+
+The second step of ADMM is a minimization problem too, but it can be rephrased in terms of a projection on the separable set $\Upsilon$ of the friction cones, note that this requires an inexpensive and parallelizable operation. 
+
+Using these results, and adding a Krasnoselskii-Mann relaxation factor $\alpha \in(0,2]$, one obtains the final algorithm:
+%
+\begin{subequations}
+	\begin{align}
+    \begin{bmatrix}
+		 H   & D_\epsilon \\
+		 D^T & -(\sigma+\rho) I
+		\end{bmatrix}
+		\begin{Bmatrix}
+		  \tilde{\vect{v}}^{k+1}  \\
+		 -\tilde{\vect{\gamma}}_\epsilon^{k+1}
+		\end{Bmatrix}
+		&=
+		\begin{Bmatrix}
+		 \vect{k} \\
+		 -\vect{b}_\epsilon + \sigma \vect{\gamma}_\epsilon^k +\rho \vect{z}^k - \vect{y}^k 
+		\end{Bmatrix}
+		\\
+		\vect{\gamma}^{k+1}_\epsilon &=\tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{\gamma}_\epsilon^k \\
+		\vect{v}^{k+1} &=\tilde{\vect{v}}^{k+1} + (1-\alpha) \vect{v}^k \\
+		\vect{z}^{k+1} &= \Pi_\Upsilon \left( \alpha \tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k  + \frac{1}{\rho} \vect{y}^k \right) \\
+		\vect{y}^{k+1} &= \vect{y}^k + \rho \left( \alpha \tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k - \vect{z}^{k+1} \right) \\
+		\vect{r}_{\text{prim}} &= \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1} \\
+		\vect{r}_{\text{dual}} &= N \vect{\gamma}_\epsilon^{k+1}+\vect{r}-\vect{y}^{k+1} 
+	\end{align}
+	\label{eq:admm_final}
+\end{subequations}
+
+The iteration is terminated when $\vect{r}_{\text{prim}}$ and $\vect{r}_{\text{dual}}$ fall under prescribed tolerances. We remark that setting proper values for $\rho$ is of fundamental importance in order to obtain a good speed of convergence. In most cases one can use heuristics and adjust $\rho$ only one or two times during the iterations, hence allowing to reuse the factorization of the linear system. Also, $\sigma$ acts similarly to a regularization term, and can be left to low values anyway.
+
+
+
+\section{Optimizations}
+
+An interesting property of this formulation is that one does not need to recover $\vect{v} = \amatr{H}^{-1}(\vect{k}+\amatr{D}^T \vect)\vect{\gamma}^{k+1}$ at the end because, for $\alpha=1$, this is also a byproduct of the linear system solve as $\vect{v}= \tilde{\vect{v}}^{k+1}$.
+In case of $\alpha\neq1$, one needs to keep it updated as 
+$\vect{v}^{k+1} =\tilde{\vect{v}}^{k+1} + (1-\alpha) \vect{v}^k$; 
+but this also means that an initial value of $\vect{v}^0$, consistent with the initial value $\vect{\gamma}^0$, must be computed, hence before the iteration one has to initialize 
+\[
+\vect{v}^0 = \amatr{H}^{-1}(\vect{k} + \amatr{D} \vect{\gamma}^0)
+\]
+
+We see that the dual residual $\vect{r}_{\text{dual}}$ is computed using the $\amatr{N}$ matrix, but can be inefficient as we do not want to compute it explicitly. One option is to remember the definition of the Schur complement and use 
+\[
+\vect{r}_{\text{dual}} = \amatr{D}^T \vect{v}^{k+1} - \amatr{E} \vect{\gamma}^{k+1} + \vect{b}_\epsilon + \vect{y}
+\]
+Another even faster option (but only for $\alpha=1$) would be to compute the dual residual using
+\[
+\vect{r}_{\text{dual}} = \rho (\vect{z}^{k+1} - \vect{z}^{k} )
+\]
+
+TO COMPLETE 
+
+
+\section{Step size selection}
+
+In general, small values of $\rho$ cause a fast reduction of the dual residual, but a slow reduction of the primal residual. This has a nice physical interpretation: truncating iterations based on too small $\rho$ most often lead to solutions where parts do not interpenetrate, but some contact forces do not satisfy the inclusion in the Coulomb cone. That is, some parts might stick like contacts were glued.
+
+On the other hand, large values of $\rho$ cause a fast reduction of the primal residual, but a slow reduction of the dual residual. This means that truncating iterations with too large $\rho$ most often lead to solutions where contact forces satisfy very well the inclusion in the Coulomb friction cones, but parts might interpenetrate.
+ 
+Clearly, this calls for the introduction of a scheme that adaptively changes the step size $\rho$ in order to achieve a balanced reduction of both residuals.
+
+TO DO 
+
+
+Step size:
+
+In \cite{Wohlberg2017} [ a step size selection via residual balancing, scale residuals given problem measuring units]
+
+In \cite{Xu_adaptive_2017} [ Spectral stepsize selection as in Barzilai Borwein ]
+
+
+
+
+\section{Benchmarks}
+
+TO DO
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.50\textwidth]{t8_convergence.pdf}
+\includegraphics[width=0.35\textwidth, trim=0cm -3cm 0 3cm]{t8_snapshot.png}
+\caption{Convergence of the ADMMM method within one time step of the wrecking ball benchmark (600 bricks in four walls): residual in frictional constraint violation compared to fixed point Jacobi iterations and to first-order SPG methods.}
+\label{fig:t8}
+\end{figure}
+
+
+
+\section{Results and conclusion}
+
+We performed benchmarks involving multi-body systems with contacts between multiple parts, showing that the performance of the ADMM method is capable of handling problems that would converge too slowly using conventional projected fixed point methods (see Fig.\ref{fig:t8}) or even first-order SPG spectral methods \cite{heynIJNME2013}.
+
+Our ADMM method requires few computational primitives: basically a projection of dual variables on conic sets, a backward solve of a linear system, and a forward solve. The latter is a computational bottleneck, but it can be performed only once per run, as the matrix does not change often during the iterations. 
+A good estimation of the ADMM step size proved to be fundamental in achieving good convergence: using some heuristics we obtained an efficient auto-tuning algorithm. 
+We noted that ADMM can be successfully applied to problems that exhibit temporal coherence because, unlike IPMs, it supports warm-starting.
+
+
+\bibliographystyle{spmpsci}
+\bibliography{../../bibliography/refsMBS,../../bibliography/refsOPT}
+
+
+
+\end{document}

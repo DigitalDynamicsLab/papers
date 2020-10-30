@@ -238,7 +238,7 @@ For variables $(\vect{x},\vect{z}) \in \mathbb{R}^m \times \mathbb{R}^n$, the AD
 \end{subequations}
 by introducing an augmented Lagrangian
 \begin{align}
-\mathcal{L}_{\rho}(\vect{x},\vect{z},\vect{y})= f(\vect{x}) + g(\vect{z}) + \vect{y}^T (A \vect{x} + B \vect{z} - \vect{b}) + \frac{\rho}{2} \norm{A \vect{x} + B \vect{z} - \vect{b}}
+\mathcal{L}_{\rho}(\vect{x},\vect{z},\vect{y})= f(\vect{x}) + g(\vect{z}) + \vect{y}^T (A \vect{x} + B \vect{z} - \vect{b}) + \frac{\rho}{2} \norm{A \vect{x} + B \vect{z} - \vect{b}}^2
 \end{align}
 and by iterating over two minimization problems as in the following loop:
 \begin{align}
@@ -271,20 +271,20 @@ We can write the augmented Lagrangian introducing two step size parameters $\sig
 +  \mathcal{I}_{\tilde{\vect{\gamma}}_\epsilon = \tilde{\vect{z}}}(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}) 
 +  \mathcal{I}_\Upsilon(\vect{\gamma}_\epsilon) \nonumber \\
 + \vect{w}^T (\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon) 
-&+ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon} 
+&+ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon}^2
 + \vect{y}^T (\tilde{\vect{z}} - \vect{z}) 
-+ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z}}
++ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z}}^2
 \end{align}
-that is also, using the property $\vect{y}^T\vect{r} + \frac{\rho}{2}\norm{\vect{r}} = \frac{\rho}{2}\norm{\vect{r}+\frac{1}{\rho} \vect{y}} - \frac{1}{2\rho} \norm{y}$, the following
+that is also, using the property $\vect{y}^T\vect{r} + \frac{\rho}{2}\norm{\vect{r}}^2 = \frac{\rho}{2}\norm{\vect{r}+\frac{1}{\rho} \vect{y}}^2 - \frac{1}{2\rho} \norm{y}^2$, the following
 \begin{align}
 \mathcal{L}_{\sigma,\rho} \left((\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}),(\vect{\gamma}_\epsilon,\vect{z}),(\vect{y},\vect{w})\right) &= 
 \frac{1}{2} \tilde{\vect{\gamma}}_\epsilon^T N \tilde{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \tilde{\vect{\gamma}}_\epsilon  
 +  \mathcal{I}_{\tilde{\vect{\gamma}}_\epsilon = \tilde{\vect{z}}}(\tilde{\vect{\gamma}}_\epsilon,\tilde{\vect{z}}) 
 +  \mathcal{I}_\Upsilon(\vect{\gamma}_\epsilon) \nonumber \\
-+ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon + \frac{1}{\sigma} \vect{w}} 
-&- \frac{1}{2\sigma} \norm{w}
-+ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z} + \frac{1}{\rho} \vect{y}}
-- \frac{1}{2\rho} \norm{y}
++ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon + \frac{1}{\sigma} \vect{w}}^2 
+&- \frac{1}{2\sigma} \norm{w}^2
++ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z} + \frac{1}{\rho} \vect{y}}^2
+- \frac{1}{2\rho} \norm{y}^2
 \end{align}
 
 The first step of ADMM requires to compute 
@@ -295,8 +295,8 @@ This can be simplified remembering that $\vect{w}^k$ will always be zero, that s
 \begin{subequations}
 	\begin{align}
     \text{min} \quad  &  \frac{1}{2} \tilde{\vect{\gamma}}_\epsilon^T N \tilde{\vect{\gamma}}_\epsilon + \vect{r}^T_\epsilon \tilde{\vect{\gamma}}_\epsilon  
-+ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon^k}
-+ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z}^k + \frac{1}{\rho} \vect{y}^k} \\
++ \frac{\sigma}{2} \norm{\tilde{\vect{\gamma}}_\epsilon - \vect{\gamma}_\epsilon^k}^2
++ \frac{\rho}{2} \norm{\tilde{\vect{z}} - \vect{z}^k + \frac{1}{\rho} \vect{y}^k}^2 \\
 	  \text{s.t.} \quad &  \tilde{\vect{\gamma}} = \tilde{\vect{z}}
 	\end{align}
 	\label{eq:admm_1a}
@@ -356,7 +356,7 @@ Using these results, and adding a Krasnoselskii-Mann relaxation factor $\alpha \
 		\vect{z}^{k+1} &= \Pi_\Upsilon \left( \alpha \tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k  + \frac{1}{\rho} \vect{y}^k \right) \\
 		\vect{y}^{k+1} &= \vect{y}^k + \rho \left( \alpha \tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k - \vect{z}^{k+1} \right) \\
 		\vect{r}_{\text{prim}} &= \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1} \\
-		\vect{r}_{\text{dual}} &= N \vect{\gamma}_\epsilon^{k+1}+\vect{r}-\vect{y}^{k+1} 
+		\vect{r}_{\text{dual}} &= N \vect{\gamma}_\epsilon^{k+1}+\vect{r}+\vect{y}^{k+1} 
 	\end{align}
 	\label{eq:admm_final}
 \end{subequations}

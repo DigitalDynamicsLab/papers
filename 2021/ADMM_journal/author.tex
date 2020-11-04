@@ -22,7 +22,7 @@
 \usepackage{graphicx}
 \usepackage{epstopdf}
 \usepackage{tabularx}
-\usepackage[ruled,vlined, linesnumbered]{algorithm2e}
+\usepackage[ruled,vlined]{algorithm2e}  % ruled,vlined,linesnumbered
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage{multicol}
@@ -66,7 +66,7 @@
 %%
 
 
-\title{Solving non smooth dynamics using ADMM}
+\title{Solving Cone Complementarity Problems in Non-Smooth Dynamics using the Alternating Direction Method of Multipliers}
 
 %\author{Alessandro Tasora \\ alessandro.tasora@unipr.it}
 \author{Alessandro Tasora}
@@ -327,7 +327,7 @@ where
 		\item unknown $\vect{\gamma}_\epsilon$ is the reaction in contacts and bilateral joints, a vector-signed measure with Lebesgue decomposition in atomic parts (impacts) and continuous parts (continuous reactions)
     \item $H$ is a positive definite matrix containing $M$, the block-diagonal matrix of the masses and inertia tensors of the bodies; if stiff
 		loads are added too (ex. when finite elements come into play) it becomes a block-sparse matrix including the tangent stiffness and damping matrices,
-		for instance $H=M-{h^2}\nabla_q\vect{f}-{h}\nabla\vect{f}$ in case of the time stepper in \cite{TasoraAnitescuCMAME10}
+		for instance $H=M-{h^2}\nabla_q\vect{f}-{h}\nabla_v\vect{f}$ in case of the first-order time stepper in \cite{TasoraAnitescuCMAME10}
     \item $D_\epsilon$ is a sparse matrix, the transpose jacobian of all constraints
     \item $\vect{k}$ is a vector containing terms proportional to applied forces $\vect{f}$
     \item $\vect{b}$ is a vector containing constraint stabilization terms, among other things
@@ -574,7 +574,7 @@ In such case one would have $N=D_{\epsilon}^T H^{-1} D_{\epsilon} + C_\epsilon$,
 	\begin{align}
     \begin{bmatrix}
 		 H   & D_\epsilon \\
-		 D_\epsilon^T & - \rho I - C
+		 D_\epsilon^T & - \rho I - C_\epsilon
 		\end{bmatrix}
 		\begin{Bmatrix}
 		 \vect{v}^{k+1}   \\
@@ -659,7 +659,7 @@ Given the definitions \eqref{eq:primalfeasibility1},\eqref{eq:primalfeasibility1
 
 An alternative way to compute $\vect{r}_{\text{dual}}^{k+1}$, that does not need to use the $N$ matrix, is 
 \[
-   \vect{r}_{\text{dual}}^{k+1} = D_\epsilon^T \vect{v}^{k+1} +C \vect{\gamma}_\epsilon^{k+1} + \vect{r} + \vect{y}^{k+1}
+   \vect{r}_{\text{dual}}^{k+1} = D_\epsilon^T \vect{v}^{k+1} +C_\epsilon \vect{\gamma}_\epsilon^{k+1} + \vect{r} + \vect{y}^{k+1}
 \]
 Another option (see \cite{Boyd2011}) is to compute it as
 \[
@@ -695,12 +695,13 @@ that is:
   
 We define the \textit{balanced} scaling policy as
 \begin{align}
-	\eta_\rho = \frac{ \norm{\vect{r}_{\text{primal}}^{k}} }{ \norm{\vect{r}_{\text{dual}}^{k}} }  
+	\eta_\rho = \frac{ \norm{\vect{r}_{\text{primal}}^{k}}_\infty }{ \norm{\vect{r}_{\text{dual}}^{k}}_\infty }  
 \end{align}
 We define the \textit{balanced normalized} scaling policy as
+% this is the "balanced_fast" policy in our MATLAB code
 \begin{align}
-	\eta_\rho = \left( \frac{\norm{\vect{r}_{\text{primal}}^{k}}}{ \norm{\vect{z}^k}+\norm{\vect{\gamma}_\epsilon^k} +10^{-11} } \right)
-															\left( \frac{\norm{\vect{r}_{\text{dual}}^{k}}}  { \norm{\vect{y}^k } +10^{-11} }  \right)^{-1}
+	\eta_\rho = \left( \frac{\norm{\vect{r}_{\text{primal}}^{k}}_\infty}{ \max{ \left( \norm{\vect{z}^k}_\infty,\norm{\vect{\gamma}_\epsilon^k}_\infty \right) } } \right)
+															\left( \frac{\norm{\vect{r}_{\text{dual}}^{k}}_\infty}  { \norm{\vect{y}^k }_\infty }  \right)^{-1}
 \end{align}
 
 Another idea is presented in 
@@ -727,9 +728,10 @@ This means that, instead of using a scalar $\rho^{k}$, in our code we use a diag
 		\right. 
 \end{align}
 
-\subsection{Preconditioning}
 
-We experienced that it
+
+		
+
 
 
 
@@ -737,17 +739,15 @@ We experienced that it
 
 Using the above results, one can finally obtain the ADDM algorithm for solving the CCP of the non-smooth dynamics timestepper:
 
-TO UPDATE!!!!
-
 \begin{algorithm}
 \DontPrintSemicolon
-\KwIn{ Initial approximations $\vect{\gamma}_\epsilon^0$, $\vect{y}^0$ }
-\KwOut{ Solution $\vect{\gamma}_\epsilon$, $\vect{v}$ }
+\KwIn{ Initial approximations $\vect{y}^0$, $\vect{z}^0$ }
+\KwOut{ Solution $\vect{\gamma}_\epsilon^\star$, $\vect{v}^\star$, optionally also $\vect{y}^\star$, $\vect{z}^\star$ }
 \SetKwFunction{StepAdjustPolicy}{StepAdjustPolicy}
 \While{$i \leq n_{max iters}$}{
     $ \begin{bmatrix}
 			 H   & D_\epsilon \\
-			 D^T & - \Theta^k I - C
+			 D^T & - \Theta^k I - C_\epsilon
 			\end{bmatrix}
 			\begin{Bmatrix}
 				\vect{v}^{k+1}  \\
@@ -762,84 +762,133 @@ TO UPDATE!!!!
 		$\vect{y}^{k+1} = \vect{y}^k + \Theta^k \left( \vect{\gamma}_\epsilon^{k+1} - \vect{z}^{k+1} \right) $ \;
 		$\vect{r}_{\text{primal}}^{k+1} = \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1}$ \;
 		$\vect{r}_{\text{dual}}^{k+1}   = \Theta^k (\vect{z}^{k+1} - \vect{z}^{k})$ \;
-		\lIf{$\norm{\vect{r}_{\text{primal}}^{k+1}} < \epsilon_{\text{primal}}$ and $\norm{\vect{r}_{\text{dual}}^{k+1}} < \epsilon_{\text{dual}}$ }{
+		\If{$\norm{\vect{r}_{\text{primal}}^{k+1}} < \epsilon_{\text{primal}}$ and $\norm{\vect{r}_{\text{dual}}^{k+1}} < \epsilon_{\text{dual}}$ }{
 			break \;
 		}
-		$\rho^{k+1} = $ \StepAdjustPolicy{$\rho^{k}$},  $\rho^{k+1} \rightarrow \Theta^{k+1}$ \;
+		$\rho^{k+1} = $ \StepAdjustPolicy{$\rho^{k}$} \; 
+		$\rho^{k+1} \rightarrow \Theta^{k+1}$ \;
 }
 %\Return{location}\;
-\caption{Simple form of the ADMM algorithm, with no $N$ Schur complement.}
+\caption{The optimized ADMM algorithm}
 \label{algo:admm1}
 \end{algorithm}
 
 
-TO DO: 
+The algorithm above contains a single computational bottleneck, that is the solution of the linear system. However, if a direct solver is used, a LU decomposition\footnote{In many cases the H matrix is hermitian, for example when just block-diagonal mass matrices are used, hence the decomposition of the symmetric indefinite saddle point matrix can be done via a LDL decomposition, which is faster than the LU decomposition. However there are cased where un-symmetric tangent stiffness matrices might be added to H, as happens in some finite element problems, precluding this optimization.} could be computed at the beginning and then recomputed only when the step size is adjusted, otherwise in all other iterations with $\rho^{k+1}=\rho^{k}$ the decomposition is unaltered and only a relatively inexpensive back solve is required.
 
-TO UPDATE!!!!
 
-ALSO MAYBE THIS ALPHA VARIANT WILL BE REMOVED!!!
+\subsection{Preconditioning}
 
-** Using these results, and adding a Krasnoselskii-Mann relaxation factor $\alpha \in(0,2]$, one obtains the final algorithm:
+We experienced that the convergence of Algorithm \ref{algo:admm1} is negatively affected by the presence of odd mass ratios in the mechanical system. The immediate effect of uneven mass ratio is a broadening of the interval of singular values of the $N$ matrix. Note that this can be also a consequence of using different measuring units for different constraint multipliers $\gamma_i$, for instance even a system with odd mass ratios can have a badly conditioned $N$ matrix if some constraint reactions are assumed in newtons, other in kilo newtons - clearly, as the choice of measuring units is arbitrary, one should find a way to make the solver as much insensitive as possible to the scaling of the constraints. 
+
+A possible remedy for this difficulty is to perform a simplified form of preconditioning by doing a diagonal scaling of $N$ and $\vect{r}_\epsilon$ before starting the iteration, thus operating on the scaled form of the problem:
 %
-\begin{subequations}
-	\begin{align}
-    \begin{bmatrix}
-		 H   & D_\epsilon \\
-		 D^T & -(\sigma+\rho) I
-		\end{bmatrix}
-		\begin{Bmatrix}
-		  \tilde{\vect{v}}^{k+1}  \\
-		 -\tilde{\vect{\gamma}}_\epsilon^{k+1}
-		\end{Bmatrix}
-		&=
-		\begin{Bmatrix}
-		 \vect{k} \\
-		 -\vect{b}_\epsilon + \sigma \vect{\gamma}_\epsilon^k +\rho \vect{z}^k - \vect{y}^k 
-		\end{Bmatrix}
-		\\
-		\vect{\gamma}^{k+1}_\epsilon &=\tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{\gamma}_\epsilon^k \\
-		\vect{v}^{k+1} &=\tilde{\vect{v}}^{k+1} + (1-\alpha) \vect{v}^k \\
-		\vect{z}^{k+1} &= \Pi_\Upsilon \left( \alpha \tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k  + \frac{1}{\rho} \vect{y}^k \right) \\
-		\vect{y}^{k+1} &= \vect{y}^k + \rho \left( \alpha \tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k - \vect{z}^{k+1} \right) \\
-		\vect{r}_{\text{prim}} &= \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1} \\
-		\vect{r}_{\text{dual}} &= N \vect{\gamma}_\epsilon^{k+1}+\vect{r}+\vect{y}^{k+1} 
-	\end{align}
-	\label{eq:admm_final}
-\end{subequations}
+\begin{align}
+	\text{min} \quad & \frac{1}{2} \breve{\vect{\gamma}}_\epsilon^T \breve{N} \breve{\vect{\gamma}}_\epsilon + \breve{\vect{r}}^T_\epsilon \breve{\vect{\gamma}}_\epsilon \\
+	\text{s.t.} \quad & \breve{\vect{\gamma}}_\epsilon \in \breve{\Upsilon} 
+	\label{eq:ChronoCCP_min_scaled}
+\end{align}
+%
+with $\breve{\vect{\gamma}}_\epsilon = S^{-1} \vect{\gamma}_\epsilon$, $\breve{N} = S N S$, 
+$\breve{\vect{r}}^T_\epsilon = S \vect{r}^T_\epsilon$. 
+We set $S_{ii} = \sqrt{\frac{1}{N_{ii}}}$. 
+%As usual we avoid using directly $N$ and we rather compute
+%\[
+%N_{ii} = D_{\epsilon,i}^T H^{-1} D_{\epsilon,i} + C_{\epsilon,ii}
+%\]
+Note that other more advanced (and CPU intensive) preconditioners could be used, for example in \cite{Stellato2020} a modified Ruitz equilibration is proposed.  
+After the solution is computed, one can quickly recover $\vect{\gamma}_\epsilon = S \breve{\vect{\gamma}}_\epsilon$. 
+
+Note that in sake of high performance we never build explicitly $\breve{N}$ and $\breve{\vect{r}}^T_\epsilon$: what we need is just a scaling of the saddle point matrix involved in \eqref{eq:admm_step1}, that will simply include the scaled jacobians
+$\breve{D}_\epsilon = S D_\epsilon$, the scaled compliance
+$\breve{C}_\epsilon = S C_\epsilon S$,  the scaled term 
+$\breve{\vect{b}}_\epsilon = S \breve{\vect{b}}_\epsilon$.
+
+The preconditioned form of the ADMM algorithm, that we call P-ADMM heretofore, is not reported here for compactness: it is enough to replace the above scaled quantities in Agorithm \ref{algo:admm1}, where $\breve{\vect{\gamma}}_\epsilon,\breve{\vect{y}},\breve{\vect{z}}$ will replace $\vect{\gamma}_\epsilon, \vect{y}, \vect{z}$, then a final step is added after convergence, to recover the unscaled solution: $\vect{\gamma}_\epsilon = S \breve{\vect{\gamma}}_\epsilon$. Moreover, if one is interested in the residuals in the not-scaled original form, for instance to verify convergence, these can be computed as 
+%
+\begin{align}
+\vect{r}_{\text{primal}}^{k+1} &= S \left( \breve{\vect{\gamma}}_\epsilon^{k+1}-\breve{\vect{z}}^{k+1} \right) \nonumber \\
+\vect{r}_{\text{dual}}^{k+1}   &= S^{-1} \Theta^k (\breve{\vect{z}}^{k+1} - \breve{\vect{z}}^{k}) \nonumber
+\end{align}
+
+
+\subsection{Warm starting}
+
+One of the nice properties of ADMM methods is that they can be easily warm started, something that for example is difficult to do with IPMs. 
+This is a relevant feature in our context, because we must solve the problem \eqref{eq:ChronoCCP} at each time step, where one can expect some degree of temporal coherency in the values of $\vect{\gamma}_\epsilon$ between each step. This is especially true for simulations involving stacked objects, like when simulating environments for robots, granular flows or masonry buildings, because the contact forces often show limited changes over time, and the amount of contacts that change state can be limited. If so, one can reuse the last computed values of $\vect{\gamma}_\epsilon$ in the previous time step to warm-start the ADMM solver at the next time step.
+
+This poses two difficulties. First of all, one must develop algorithms and data structures that are able to convey information from the contact at time $t_A$ to a time $t_B = t_A+h$. in fact, after ADMM computes the contact forces at step $t_A$, those could be saved into the contact data structures, however those contacts would be recomputed by the collision detection engine at the next time step $t_B$: since the objects move, also the contact manifold changes, thus it is not trivial to compute which contacts are persistent between the two steps. By using some heuristics and tolerances, one can detect if some contacts at time $t_B$ are the same contacts used at time $t_A$, if so, their last reaction forces $\vect{\gamma}_\epsilon$ can be copied to the new contacts and used for the warm starting, whereas completely new contacts are initialized with $\vect{\gamma}_\epsilon = 0$. 
+
+Furthermore, one can see that the ADDM Algorithm \ref{algo:admm1} is a fixed point 
+$\{\vect{y}^{k+1},\vect{z}^{k+1}\} = \vect{g} \left(\{\vect{y}^k,\vect{z}^k\}\right)$, thus one needs $\{\vect{y}^0,\vect{z}^0\}$ to warm start it, rather than $\vect{\gamma}_\epsilon^0$. This leads to two options: store both $\vect{y}$ and $\vect{z}$ values in the contact data (wasting some memory in case of large scale simulations, and complicating both data structures and bookkeeping) otherwise assume that the last ADMM run converged exactly up to $\vect{r}_{\text{primal}}=0$, so one could just store $\vect{\gamma}_\epsilon$ values in contacts, and then compute
+%
+\begin{align}
+\vect{v}^0 &= H^{-1}( \vect{k} + D_\epsilon \vect{\gamma}_\epsilon^0) \nonumber \\
+\vect{y}^0 &= - (D_\epsilon^T \vect{v}^0 + C \vect{\gamma}_\epsilon^0 + \vect{b}_\epsilon)  \nonumber \\
+\vect{z}^0 &= \vect{\gamma}_\epsilon^0 \nonumber
+\end{align}
+This idea, implemented in Algorithm \ref{algo:admm2}, provides a speedup of 2x-10x in our tests.
+
+\begin{algorithm}
+\DontPrintSemicolon
+\KwIn{ Initial approximation $\vect{\gamma}_\epsilon^0$, optional: $\vect{v}^0$}
+\KwOut{ Solution $\vect{\gamma}_\epsilon^\star$, $\vect{v}^\star$, optionally also $\vect{y}^\star$, $\vect{z}^\star$ }
+\SetKwFunction{ADMM}{ADMM}
+\If{$\vect{v}^0$ is not provided}
+{
+	$\vect{v}^0 = H^{-1}( \vect{k} + D_\epsilon \vect{\gamma}_\epsilon^0)$ \;
+}
+$\vect{y}^0 = - (D_\epsilon^T \vect{v}^0 + C \vect{\gamma}_\epsilon^0 + \vect{b}_\epsilon)$ \;
+$\vect{z}^0 = \vect{\gamma}_\epsilon^0$ \;
+$\vect{\gamma}_\epsilon^\star, \vect{v}^\star = $ \ADMM{$\vect{y}^0$,$\vect{z}^0$} \; 
+\caption{Warm-started ADMM}
+\label{algo:admm2}
+\end{algorithm}
 
 
 
-TO DO: CUT THIS "`OPTIMIZATIONS"' SECT, HERE ONLY FOR CUT PASTING
-
-\section{Optimizations}
-
-An interesting property of this formulation is that one does not need to recover $\vect{v} = \amatr{H}^{-1}(\vect{k}+\amatr{D}^T \vect)\vect{\gamma}^{k+1}$ at the end because, for $\alpha=1$, this is also a byproduct of the linear system solve as $\vect{v}= \tilde{\vect{v}}^{k+1}$.
-In case of $\alpha\neq1$, one needs to keep it updated as 
-$\vect{v}^{k+1} =\tilde{\vect{v}}^{k+1} + (1-\alpha) \vect{v}^k$; 
-but this also means that an initial value of $\vect{v}^0$, consistent with the initial value $\vect{\gamma}^0$, must be computed, hence before the iteration one has to initialize 
-\[
-\vect{v}^0 = \amatr{H}^{-1}(\vect{k} + \amatr{D} \vect{\gamma}^0)
-\]
-
-We see that the dual residual $\vect{r}_{\text{dual}}$ is computed using the $\amatr{N}$ matrix, but can be inefficient as we do not want to compute it explicitly. One option is to remember the definition of the Schur complement and use 
-\[
-\vect{r}_{\text{dual}} = \amatr{D}^T \vect{v}^{k+1} - \amatr{E} \vect{\gamma}^{k+1} + \vect{b}_\epsilon + \vect{y}
-\]
-Another even faster option (but only for $\alpha=1$) would be to compute the dual residual using
-\[
-\vect{r}_{\text{dual}} = \rho (\vect{z}^{k+1} - \vect{z}^{k} )
-\]
-
- 
-
+% REMOVED - the overrelaxation form is not discussed
+%** Using these results, and adding a Krasnoselskii-Mann relaxation factor $\alpha \in(0,2]$, one obtains the final algorithm:
+%
+%\begin{subequations}
+	%\begin{align}
+    %\begin{bmatrix}
+		 %H   & D_\epsilon \\
+		 %D^T & -(\sigma+\rho) I
+		%\end{bmatrix}
+		%\begin{Bmatrix}
+		  %\tilde{\vect{v}}^{k+1}  \\
+		 %-\tilde{\vect{\gamma}}_\epsilon^{k+1}
+		%\end{Bmatrix}
+		%&=
+		%\begin{Bmatrix}
+		 %\vect{k} \\
+		 %-\vect{b}_\epsilon + \sigma \vect{\gamma}_\epsilon^k +\rho \vect{z}^k - \vect{y}^k 
+		%\end{Bmatrix}
+		%\\
+		%\vect{\gamma}^{k+1}_\epsilon &=\tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{\gamma}_\epsilon^k \\
+		%\vect{v}^{k+1} &=\tilde{\vect{v}}^{k+1} + (1-\alpha) \vect{v}^k \\
+		%\vect{z}^{k+1} &= \Pi_\Upsilon \left( \alpha \tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k  + \frac{1}{\rho} \vect{y}^k \right) \\
+		%\vect{y}^{k+1} &= \vect{y}^k + \rho \left( \alpha \tilde{\vect{\gamma}}_\epsilon^{k+1} + (1-\alpha) \vect{z}^k - \vect{z}^{k+1} \right) \\
+		%\vect{r}_{\text{prim}} &= \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1} \\
+		%\vect{r}_{\text{dual}} &= N \vect{\gamma}_\epsilon^{k+1}+\vect{r}+\vect{y}^{k+1} 
+	%\end{align}
+	%\label{eq:admm_final}
+%\end{subequations}
+%
+%An interesting property of this formulation is that one does not need to recover $\vect{v} = \amatr{H}^{-1}(\vect{k}+\amatr{D}^T \vect)\vect{\gamma}^{k+1}$ at the end because, for $\alpha=1$, this is also a byproduct of the linear system solve as $\vect{v}= \tilde{\vect{v}}^{k+1}$.
+%In case of $\alpha\neq1$, one needs to keep it updated as 
+%$\vect{v}^{k+1} =\tilde{\vect{v}}^{k+1} + (1-\alpha) \vect{v}^k$; 
+%but this also means that an initial value of $\vect{v}^0$, consistent with the initial value $\vect{\gamma}^0$, must be computed, hence before the iteration one has to initialize 
+%\[
+%\vect{v}^0 = \amatr{H}^{-1}(\vect{k} + \amatr{D} \vect{\gamma}^0)
+%\]
 
 
 
 
 
 \section{Benchmarks}
-
-
 
 
 
@@ -928,6 +977,8 @@ however, the convergence is greatly improved, suggesting that the FADMM method i
   \end{minipage}
 \end{figure}
 
+
+
 For \textsc{Test 1.b}, convergence plots in Fig.\ref{fig:t6_primdual_b} show that the FADMM is very efficient even if starting from 
 a fixed not optimal step size, although the performance deteriorates if no preconditioning is used. The ADMM method with balanced 
 step adaptivity $n_s=5$ converges quite well, especially with the help of a preconditioner.
@@ -942,22 +993,48 @@ when assessing stability and seismic response via discrete elements \cite{Beatin
 
 TO DO 
 
-\begin{figure}[h!]
-\centering
-\includegraphics[width=0.50\textwidth]{t8_convergence.pdf}
-\includegraphics[width=0.35\textwidth, trim=0cm -3cm 0 3cm]{t8_snapshot.png}
-\caption{Convergence of the ADMMM method within one time step of the wrecking ball benchmark (600 bricks in four walls): residual in frictional constraint violation compared to fixed point Jacobi iterations and to first-order SPG methods.}
-\label{fig:t8}
+
+
+\begin{figure}[!tbp]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \includegraphics[width=0.8\textwidth, trim=0cm -3cm 0 3cm]{t8_snapshot.png}
+    \caption{Snapshot from \textsc{Test 2}, the wrecking ball benchmark (600 bricks in four walls).}
+		\label{fig:t6_primdual_a_ns}
+  \end{minipage}
+  \hfill
+	\begin{minipage}[t]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{t8_convergence.pdf}
+    \caption{Constraint violation compared to fixed point Jacobi iterations and to SPG methods, in \textsc{Test 2}.}
+		\label{fig:t8_convergence}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[!tbp]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{t8_primdual.pdf}
+    \caption{Primal-dual convergence of the algorithm in \textsc{Test 2}.}
+		\label{fig:t8_primdual}
+  \end{minipage}
+  \hfill
+	\begin{minipage}[t]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{t8_compliance.pdf}
+    \caption{Effect of regularization or compliance in contacts in \textsc{Test 2}.}
+  \end{minipage}
 \end{figure}
 
 
 \section{Results and conclusion}
 
-We performed benchmarks involving multi-body systems with contacts between multiple parts, showing that the performance of the ADMM method is capable of handling problems that would converge too slowly using conventional projected fixed point methods (see Fig.\ref{fig:t8}) or even first-order SPG spectral methods \cite{heynIJNME2013}.
+We performed benchmarks involving multi-body systems with contacts between multiple parts, showing that the performance of the ADMM method is capable of handling problems that would converge too slowly using conventional projected fixed point methods or first-order SPG spectral methods \cite{heynIJNME2013}.
 
 Our ADMM method requires few computational primitives: basically a projection of dual variables on conic sets, a backward solve of a linear system, and a forward solve. The latter is a computational bottleneck, but it can be performed only once per run, as the matrix does not change often during the iterations. 
 A good estimation of the ADMM step size proved to be fundamental in achieving good convergence: using some heuristics we obtained an efficient auto-tuning algorithm. 
-We noted that ADMM can be successfully applied to problems that exhibit temporal coherence because, unlike IPMs, it supports warm-starting.
+We noted that ADMM can be successfully applied to problems that exhibit temporal coherence because, unlike IPMs, it supports warm-starting. 
+Another optimization that allowed superior performance is the adoption of a diagonal preconditioning, with block scaling for the triplets of lagrangian multipliers relative to the conic constraints.
+
+Further research on this topic might address the acceleration of the ADMM method by means of Anderson acceleration.
 
 
 \bibliographystyle{spmpsci}

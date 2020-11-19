@@ -829,6 +829,9 @@ $\{\vect{y}^{k+1},\vect{z}^{k+1}\} = \vect{g} \left(\{\vect{y}^k,\vect{z}^k\}\ri
 \end{align}
 This idea, implemented in Algorithm \ref{algo:admm2}, provides a speedup of 2x-10x in our tests.
 
+Note that also the last $\rho^k$ value from the previous time step can be used as the initial $\rho^0$ for the next step, adding a further optimization. Statistically, given some degree of temporal coherency in the mechanical system, such pre-tuned value would be better than a default value like $\rho^0=0.1$.
+
+
 \begin{algorithm}
 \DontPrintSemicolon
 \KwIn{ Initial approximation $\vect{\gamma}_\epsilon^0$, optional: $\vect{v}^0$}
@@ -890,7 +893,9 @@ $\vect{\gamma}_\epsilon^\star, \vect{v}^\star = $ \ADMM{$\vect{y}^0$,$\vect{z}^0
 
 \section{Benchmarks}
 
-
+All benchmarks have been computed on a Intel\textsuperscript{\textregistered} Core\textsuperscript{\texttrademark} i7-8750H CPU, clocked at \SI{2.20}{GHz}, with 6 physical cores and \SI{16}{GB} of RAM. 
+The ADMM method has been implemented
+in C++ within the Chrono open-source library, using the Eigen library v.3.37 for dense and sparse linear algebra, and Intel\textsuperscript{\textregistered} MKL Pardiso as a direct solver for sparse linear systems.
 
 \subsection{High stack with odd mass ratio}
 
@@ -922,13 +927,13 @@ efficient method for non-smooth problems presented in \cite{hammadTOG2015}.
 \begin{figure}[!tbp]
   \centering
   \begin{minipage}[t]{0.48\textwidth}
-    \includegraphics[width=\textwidth]{t6_snapshot.png}
+    \includegraphics[width=\textwidth]{pics/t6_snapshot.png}
     \caption{Setup of \textsc{Test 1}.}
 		\label{fig:t6_snapshot}
   \end{minipage}
   \hfill
   \begin{minipage}[t]{0.48\textwidth}
-    \includegraphics[width=\textwidth]{t6_convergence_b.pdf}
+    \includegraphics[width=\textwidth]{pics/t6_convergence_b.pdf}
     \caption{Convergence of ADMM methods compared to the Jacobi projected fixed point iteration, for \textsc{Test 1.b} 
 		The plot shows the violation of unilateral constraints in terms of penetrating residual velocity. }
 		\label{fig:t6_convergence_b}
@@ -938,13 +943,13 @@ efficient method for non-smooth problems presented in \cite{hammadTOG2015}.
 \begin{figure}[!tbp]
   \centering
   \begin{minipage}[t]{0.48\textwidth}
-    \includegraphics[width=\textwidth]{t6_primdual_a.pdf}
+    \includegraphics[width=\textwidth]{pics/t6_primdual_a.pdf}
     \caption{Convergence of primal and dual residuals in \textsc{Test 1.a}.}
 		\label{fig:t6_primdual_a}
   \end{minipage}
   \hfill
   \begin{minipage}[t]{0.48\textwidth}
-    \includegraphics[width=\textwidth]{t6_primdual_b.pdf}
+    \includegraphics[width=\textwidth]{pics/t6_primdual_b.pdf}
     \caption{Convergence of primal and dual residuals in \textsc{Test 1.b}. }
 		\label{fig:t6_primdual_b}
   \end{minipage}
@@ -965,13 +970,13 @@ however, the convergence is greatly improved, suggesting that the FADMM method i
 \begin{figure}[!tbp]
   \centering
   \begin{minipage}[t]{0.48\textwidth}
-    \includegraphics[width=\textwidth]{t6_primdual_a_ns.pdf}
+    \includegraphics[width=\textwidth]{pics/t6_primdual_a_ns.pdf}
     \caption{Convergence of primal and dual residuals in \textsc{Test 1.a} for varying frequency $n_s$ of automatic updates to the step size, in the ADMM algorithm.}
 		\label{fig:t6_primdual_a_ns}
   \end{minipage}
   \hfill
 	\begin{minipage}[t]{0.48\textwidth}
-    \includegraphics[width=\textwidth]{t6_primdual_a_rho.pdf}
+    \includegraphics[width=\textwidth]{pics/t6_primdual_a_rho.pdf}
     \caption{Convergence of primal and dual residuals in \textsc{Test 1.a} for varying values of the step size $\rho$ in the FADMM algorithm.}
 		\label{fig:t6_primdual_a_rho}
   \end{minipage}
@@ -989,22 +994,21 @@ when assessing stability and seismic response via discrete elements \cite{Beatin
 
 
 
-\subsection{Bulldozer on stone slabs}
+\subsection{Wrecking ball}
 
-TO DO 
-
-
+We modeled four parallel walls made with 10 rows of 15 bricks each. Bricks length, height, width are respectively \SI{3.96}{m}, \SI{2}{m}, \SI{4}{m}, and their density is \SI{100}{kg/m^3}.  A wrecking ball with diameter \SI{8}{m} and density \SI{8000}{kg/m^3} impacts horizontally with the 600 bricks.  The density of the bricks respect to the ball is deliberately high in order to generate a badly conditioned problem with odd mass ratios. The friction coefficient is $\mu=0.4$ and the time step is $h=\SI{0.02}{s}$. Figure \ref{fig:t6_primdual_a_ns} shows a snapshot from the simulation.
+The convergence of the ADMM method, as shown in Fig.\ref{fig:t8_convergence} for a random time step, is noticeably superior to the convergence of fixed point iterations such as projected Jacobi. The method exhibit even better convergence when using the diagonal preconditioning \eqref{eq:ChronoCCP_min_scaled}, as shown Fig.\ref{fig:t8_primdual}, because of the odd scaling of the masses.
 
 \begin{figure}[!tbp]
   \centering
   \begin{minipage}[t]{0.48\textwidth}
-    \includegraphics[width=0.8\textwidth, trim=0cm -3cm 0 3cm]{t8_snapshot.png}
+    \includegraphics[width=\textwidth, trim=0cm -0cm 0cm 0cm]{pics/t8_snapshot.png}
     \caption{Snapshot from \textsc{Test 2}, the wrecking ball benchmark (600 bricks in four walls).}
 		\label{fig:t6_primdual_a_ns}
   \end{minipage}
   \hfill
 	\begin{minipage}[t]{0.48\textwidth}
-    \includegraphics[width=\textwidth]{t8_convergence.pdf}
+    \includegraphics[width=\textwidth]{pics/t8_convergence.pdf}
     \caption{Constraint violation compared to fixed point Jacobi iterations and to SPG methods, in \textsc{Test 2}.}
 		\label{fig:t8_convergence}
   \end{minipage}
@@ -1013,23 +1017,94 @@ TO DO
 \begin{figure}[!tbp]
   \centering
   \begin{minipage}[t]{0.48\textwidth}
-    \includegraphics[width=\textwidth]{t8_primdual.pdf}
+    \includegraphics[width=\textwidth]{pics/t8_primdual.pdf}
     \caption{Primal-dual convergence of the algorithm in \textsc{Test 2}.}
 		\label{fig:t8_primdual}
   \end{minipage}
   \hfill
 	\begin{minipage}[t]{0.48\textwidth}
-    \includegraphics[width=\textwidth]{t8_compliance.pdf}
+    \includegraphics[width=\textwidth]{pics/t8_compliance.pdf}
     \caption{Effect of regularization or compliance in contacts in \textsc{Test 2}.}
   \end{minipage}
 \end{figure}
+
+
+\subsection{Robotic manipulator}
+
+\begin{figure}[!tbp]
+  \centering
+	\includegraphics[width=0.32\textwidth]{pics/robot_80.png}
+  \includegraphics[width=0.32\textwidth]{pics/robot_200.png}
+	\includegraphics[width=0.32\textwidth]{pics/robot_280.png}
+	\hfill
+  \caption{\textsc{Test 3}. Robot interacting with the environment via contacts between the gripper and few boxes. The robot features extremely odd mass ratios, rheonomic constraints and redundant constraints.}
+	\label{fig:tire}
+\end{figure}
+
+This benchmark features a 6-DOF industrial robot whose end effector interacts with 15 boxes with height \SI{0.3}{m} and width \SI{0.4}{m}, moving them in the working area via contacts and collisions, as shown in Fig.\ref{fig:robot_200}. The friction coefficient between the boxes is $\mu=0.4$, the time step is $h=\SI{0.01}{s}$. The difficulty highlighted by this benchmark is the simultaneous presence of non-smooth contacts and bilateral constraints in a critical articulated mechanism. In fact the simulation of a robot arm actuated via motorized joints is a trivial problem, but here we do the opposite: we drive the end effector via a rheonomic constraint defining an imposed trajectory respect to the base, hence the rest of the arm will naturally move to the configuration prescribed by joint constraints; however since the mass of the end effector is much lighter than the bicept, since some joints are redundant\footnote{The robot has a gravity compensator modeled via two revolute joints and one cylindrical joint, leading to an overconstrained loop.} and since the robot passes close to a singularity, the simulation of the robot alone is a challenging task. That is, even without contacts, most iterative solvers like SOR or Jacobi would converge too slowly, and even Krylov linear solvers like GMRES, CG, MINRES would require many iterations unless equipped by some preconditioner. In our test, convergence to high precision is achieved in 15 iterations at most, where just one or two of them require a refactorization of the saddle-point matrix. Moreover, when there are no contacts, the solution is provided in exactly one step, as the iteration boils down to a single factorization followed by a forward/back solve just like when simulating the robot via a direct solver in the conventional context of smooth dynamics.
+ 
+
+
+\subsection{Deformable bars}
+
+This benchmark aims at estimating the efficiency and robustness of the method in problems involving also finite elements. Few methods already exist in literature that can simulate deformable structures in the context of non-smooth dynamics, but most of them target the field of interactive computer graphics, where the stiffness of structures is often very low. In our case, being interested in engineering applications, we require that the method would be able to handle both very deformable structures (ex. rubber-like materials) as well as very stiff structures. In this benchmark, we simulate the fall of 15 deformable bars, each modeled with a mesh of tetrahedral finite elements, for a total of 9360 degrees of freedom. The outer skin of the bars can collide with each other and with rigid bodies - in this case there is just a single rigid body, namely the flat ground. At the contact points there is a friction coefficient $\mu=0.3$ and a null restitution coefficient, the time step is $h=\SI{0.05}{s}$. In all simulations the material of the bars has a density of \SI{1e3}{kg/m^3}, a 0.01 Rayleigh damping coefficient and a Poisson ratio $\nu=0.3$, but in the case of \textsc{Test 4.a} (see Fig.\ref{fig:ribbons_1}) the Young modulus is $E=\SI{1e6}{Pa}$, whereas in \textsc{Test 4.b} (see Fig.\ref{fig:ribbons_2}) the Young modulus is many orders of magnitude higher: $E=\SI{2e11}{Pa}$. Tests has shown that our ADMM method converges equally well even in the case of extreme stiffness, converging to the required  tolerances with comparable number of iterations. At each time step, both \textsc{Test 4.a} and \textsc{Test 4.b} required an average number of 3 factorizations for the adjustment of the $\rho^i$ step and a variable number of forward/back solves in the range of $4\div50$. When bars come into contact, an average number of $1650$ contacts is found, leading to saddle-point linear problems with about 15 thousands of unknowns that are factorized, on average, in \SI{0.116}{s} using the sparse direct solver. Each forward/back solve requires \SI{0.0069}{s} on average. Each time step then required about one second time of wall clock time.
+
+\begin{figure}[!tbp]
+  \centering
+	\includegraphics[width=0.24\textwidth]{pics/ribbons_3_20.png}
+  \includegraphics[width=0.24\textwidth]{pics/ribbons_3_40.png}
+	\includegraphics[width=0.24\textwidth]{pics/ribbons_3_60.png}
+	\includegraphics[width=0.24\textwidth]{pics/ribbons_3_80.png}
+	\hfill
+  \caption{\textsc{Test 4.a}. Frictional contact between deformable bars with low stiffness, at $t=\SI{0.1}{s},t=\SI{0.2}{s},t=\SI{0.3}{s},t=\SI{0.4}{s}$. False color of the mesh represents the instantaneous norm of the speed of the nodes.}
+	\label{fig:ribbons_1}
+\end{figure}
+
+%\begin{figure}[!tbp]
+  %\centering
+	%\includegraphics[width=0.24\textwidth]{pics/ribbons_1_20.png}
+  %\includegraphics[width=0.24\textwidth]{pics/ribbons_1_40.png}
+	%\includegraphics[width=0.24\textwidth]{pics/ribbons_1_60.png}
+	%\includegraphics[width=0.24\textwidth]{pics/ribbons_1_80.png}
+	%\hfill
+  %\caption{\textsc{Test 3.c}. Frictional contact between deformable bars with low stiffness, at $t=\SI{0.1}{s},t=\SI{0.2}{s},t=\SI{0.3}{s},t=\SI{0.4}{s}$.}
+	%\label{fig:ribbons_3}
+%\end{figure}
+
+\begin{figure}[!tbp]
+  \centering
+	\includegraphics[width=0.24\textwidth]{pics/ribbons_2_20.png}
+  \includegraphics[width=0.24\textwidth]{pics/ribbons_2_40.png}
+	\includegraphics[width=0.24\textwidth]{pics/ribbons_2_60.png}
+	\includegraphics[width=0.24\textwidth]{pics/ribbons_2_80.png}
+	\hfill
+  \caption{\textsc{Test 4.b}. Frictional contact between deformable bars with high stiffness ($E=\SI{200}{GPa}$) at $t=\SI{0.1}{s},t=\SI{0.2}{s},t=\SI{0.3}{s},t=\SI{0.4}{s}$.}
+	\label{fig:ribbons_2}
+\end{figure}
+
+
+
+\subsection{Deformable tire}
+
+\begin{figure}[!tbp]
+  \centering
+	\includegraphics[width=0.32\textwidth]{pics/tire_5.png}
+  \includegraphics[width=0.32\textwidth]{pics/tire_10.png}
+	\includegraphics[width=0.32\textwidth]{pics/tire_15.png}
+	%\includegraphics[width=0.24\textwidth]{pics/tire_20.png}
+	\hfill
+  \caption{\textsc{Test 5}. Large deformation of a finite element mesh colliding with a plane. Thanks to the non-smooth formulation, large time steps can be used (only ten steps have been used from start to end) and no penalty parameters must be used in contact points. Contacts between lugs and ground show zero interpenetration regardless of the stiffness of the mesh.}
+	\label{fig:tire}
+\end{figure}
+
+
 
 
 \section{Results and conclusion}
 
 We performed benchmarks involving multi-body systems with contacts between multiple parts, showing that the performance of the ADMM method is capable of handling problems that would converge too slowly using conventional projected fixed point methods or first-order SPG spectral methods \cite{heynIJNME2013}.
 
-Our ADMM method requires few computational primitives: basically a projection of dual variables on conic sets, a backward solve of a linear system, and a forward solve. The latter is a computational bottleneck, but it can be performed only once per run, as the matrix does not change often during the iterations. 
+Our ADMM method requires few computational primitives: basically a projection of dual variables on conic sets, a forward/backward solve of a linear system, and its factorization. The latter is a computational bottleneck, but it can be performed only once per run, as the matrix does not change often during the iterations. 
 A good estimation of the ADMM step size proved to be fundamental in achieving good convergence: using some heuristics we obtained an efficient auto-tuning algorithm. 
 We noted that ADMM can be successfully applied to problems that exhibit temporal coherence because, unlike IPMs, it supports warm-starting. 
 Another optimization that allowed superior performance is the adoption of a diagonal preconditioning, with block scaling for the triplets of lagrangian multipliers relative to the conic constraints.

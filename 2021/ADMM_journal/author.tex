@@ -747,7 +747,7 @@ Using the above results, one can finally obtain the ADDM algorithm for solving t
 \While{$i \leq n_{max iters}$}{
     $ \begin{bmatrix}
 			 H   & D_\epsilon \\
-			 D^T & - \Theta^k I - C_\epsilon
+			 D^T & - \Theta^k - C_\epsilon
 			\end{bmatrix}
 			\begin{Bmatrix}
 				\vect{v}^{k+1}  \\
@@ -769,7 +769,7 @@ Using the above results, one can finally obtain the ADDM algorithm for solving t
 		$\rho^{k+1} \rightarrow \Theta^{k+1}$ \;
 }
 %\Return{location}\;
-\caption{The optimized ADMM algorithm}
+\caption{ADMM for solving CCPs in nonsmooth dynamics}
 \label{algo:admm1}
 \end{algorithm}
 
@@ -888,6 +888,79 @@ $\vect{\gamma}_\epsilon^\star, \vect{v}^\star = $ \ADMM{$\vect{y}^0$,$\vect{z}^0
 %\]
 
 
+\section{Accelerated ADMM}
+
+Following the idea presented in \cite{Goldstein2014}, one can improve the convergence of ADMM by introducing a predictor-corrector step based on the Nesterov acceleration, with minimal computational overhead. Heretofore we will call this variant as FADDM (Fast ADMM). 
+The convergence of the original Nesterov-accelerated ADMM requires the assumption that both $f(\vect{x})$ and $g(\vect{z})$ in \eqref{eq:admm} are strongly convex.
+
+\begin{definition}
+A function $f: \mathbb{R}^n \rightarrow \mathbb{R}$, possibly non differentiable, is \textit{$\beta$-strongly convex} if for all points $\vect{x},\vect{y}$ in its domain it holds:
+\begin{align}
+\label{eq:strongconvex}
+f(\vect{x}) - f(\vect{y}) \geq \left\langle \vect{u}, \vect{x} - \vect{y}  \right\rangle + \frac{\beta}{2} \norm{ \vect{x} - \vect{y} }^2
+ \quad \forall \vect{u} \in \partial f(\vect{y})
+\end{align}
+\end{definition}
+
+In our case, $f(\vect{x})$ is a quadratic function, hence strongly convex, but $g(\vect{z})$ is an indicator function, hence convex but not strongly convex. In the case where just one of the two functions is strongly convex, a restart scheme can be applied as in \cite{Goldstein2014}, where the method reverts to the original ADMM if the combined residual $r_{\text{comb}}$ is not monotonically decreasing. The monotone decrease is assessed with a factor $\epsilon_r < 1$, as a default value we use 
+$\epsilon_r =0.999$ to avoid too frequent restarts. 
+Using the same performance optimization strategies that we used to develop Algorithm \ref{algo:admm1}, we finally obtain the following algorithm:
+
+\begin{algorithm}
+\DontPrintSemicolon
+\KwIn{ Initial approximations $\vect{\gamma}_\epsilon^0$, $\vect{y}^0$ }
+\KwOut{ Solution $\vect{\gamma}_\epsilon^\star$, $\vect{v}^\star$, optionally also $\vect{y}^\star$, $\vect{z}^\star$ }
+\SetKwFunction{StepAdjustPolicy}{StepAdjustPolicy}
+$\alpha^{0} = 1, \quad \Theta=\Theta(\rho), \quad r_{\text{comb}}^{0} = \infty$ \;
+\While{$i \leq n_{max iters}$}{
+    $\vect{z}^{k+1} = \Pi_\Upsilon \left(  \vect{\gamma}_\epsilon^{k} +(\Theta^k)^{-1} \vect{y}^k \right )$ \;
+		$ \begin{bmatrix}
+			 H   & D_\epsilon \\
+			 D^T & - \Theta - C_\epsilon
+			\end{bmatrix}
+			\begin{Bmatrix}
+				\vect{v}^{k+1}  \\
+			 -\vect{\gamma}_\epsilon^{k+1}
+			\end{Bmatrix}
+			=
+			\begin{Bmatrix}
+			 \vect{k} \\
+			 -\vect{b}_\epsilon + \Theta \vect{z}^{k+1} - \vect{y}^k 
+			\end{Bmatrix} $\;
+		$\vect{y}^{k+1} = \vect{y}^k + \Theta \left( \vect{\gamma}_\epsilon^{k+1} - \vect{z}^{k+1} \right) $ \;
+		$\vect{r}_{\text{primal}}^{k+1} = \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1}$ \;
+		$\vect{r}_{\text{dual}}^{k+1}   = \Theta (\vect{z}^{k+1} - \vect{z}^{k})$ \;
+
+		\If{$\norm{\vect{r}_{\text{primal}}^{k+1}} < \epsilon_{\text{primal}}$ and $\norm{\vect{r}_{\text{dual}}^{k+1}} < \epsilon_{\text{dual}}$ }{
+			break \;
+		}
+		
+		$r_{\text{comb}}^{k+1}= \Theta^{-1} \norm{\vect{y}^{k+1}-\vect{y}^{k}}_2 + \Theta \norm{\vect{\gamma}_\epsilon^{k+1}-\vect{\gamma}_\epsilon^{k} }_2$
+		
+		\If {$r_{\text{comb}}^{k+1} < \epsilon_r r_{\text{comb}}^{k}$ } {
+            $\alpha^{k+1} = \frac{ 1 + \sqrt{1 + 4 (\alpha^{k})^2} }{ 2 } $ \;
+            $\vect{\gamma}_\epsilon^{k+1} = \vect{\gamma}_\epsilon^{k} + \frac{\alpha^{k}-1}{\alpha^{k+1}} (\vect{\gamma}_\epsilon^{k+1} - \vect{\gamma}_\epsilon^{k}) $ \;
+            $\vect{v}^{k+1} = \vect{v}^{k} + \frac{\alpha^{k}-1}{\alpha^{k+1}} (\vect{v}^{k+1} - \vect{v}^{k}) $  \;
+						$\vect{y}^{k+1} = \vect{y}^{k} + \frac{\alpha^{k}-1}{\alpha^{k+1}} (\vect{y}^{k+1} - \vect{y}^{k}) $  \;
+		}
+    \Else{
+            $\alpha^{k+1} = 1 $ \;
+            $r_{\text{comb}}^{k+1} = \frac{1}{\epsilon_r} r_{\text{comb}}^{k} $ \;
+    }
+}
+\caption{FADMM for solving CCPs in nonsmooth dynamics}
+\label{algo:fadmm1}
+\end{algorithm}
+
+We note in passing that the Algorithm \ref{algo:fadmm1} is based on a 
+$\vect{z} \rightarrow \vect{\gamma}_\epsilon \rightarrow \vect{y}$ 
+update ordering whereas the Algorithm \ref{algo:admm1} is based on a 
+$\vect{\gamma}_\epsilon \rightarrow  \vect{z} \rightarrow  \vect{y}$ ordering, leading
+to a slightly modified warm starting method.
+%Both can be used, but the second has the benefit that it is easier to warm 
+% start it from $\{\vect{\gamma}_\epsilon^{0}, \vect{y}^{0}\}$
+
+Also, a preconditioned version with diagonal scaling can be obtained with the already discussed transformation of \eqref{eq:ChronoCCP_min_scaled}, leading to a method that we call P-FADMM in the following.
 
 
 
@@ -1038,10 +1111,10 @@ The convergence of the ADMM method, as shown in Fig.\ref{fig:t8_convergence} for
 	\includegraphics[width=0.32\textwidth]{pics/robot_280.png}
 	\hfill
   \caption{\textsc{Test 3}. Robot interacting with the environment via contacts between the gripper and few boxes. The robot features extremely odd mass ratios, rheonomic constraints and redundant constraints.}
-	\label{fig:tire}
+	\label{fig:robot}
 \end{figure}
 
-This benchmark features a 6-DOF industrial robot whose end effector interacts with 15 boxes with height \SI{0.3}{m} and width \SI{0.4}{m}, moving them in the working area via contacts and collisions, as shown in Fig.\ref{fig:robot_200}. The friction coefficient between the boxes is $\mu=0.4$, the time step is $h=\SI{0.01}{s}$. The difficulty highlighted by this benchmark is the simultaneous presence of non-smooth contacts and bilateral constraints in a critical articulated mechanism. In fact the simulation of a robot arm actuated via motorized joints is a trivial problem, but here we do the opposite: we drive the end effector via a rheonomic constraint defining an imposed trajectory respect to the base, hence the rest of the arm will naturally move to the configuration prescribed by joint constraints; however since the mass of the end effector is much lighter than the bicept, since some joints are redundant\footnote{The robot has a gravity compensator modeled via two revolute joints and one cylindrical joint, leading to an overconstrained loop.} and since the robot passes close to a singularity, the simulation of the robot alone is a challenging task. That is, even without contacts, most iterative solvers like SOR or Jacobi would converge too slowly, and even Krylov linear solvers like GMRES, CG, MINRES would require many iterations unless equipped by some preconditioner. In our test, convergence to high precision is achieved in 15 iterations at most, where just one or two of them require a refactorization of the saddle-point matrix. Moreover, when there are no contacts, the solution is provided in exactly one step, as the iteration boils down to a single factorization followed by a forward/back solve just like when simulating the robot via a direct solver in the conventional context of smooth dynamics.
+This benchmark features a 6-DOF industrial robot whose end effector interacts with 15 boxes with height \SI{0.3}{m} and width \SI{0.4}{m}, moving them in the working area via contacts and collisions, as shown in Fig.\ref{fig:robot}. The friction coefficient between the boxes is $\mu=0.4$, the time step is $h=\SI{0.01}{s}$. The difficulty highlighted by this benchmark is the simultaneous presence of non-smooth contacts and bilateral constraints in a critical articulated mechanism. In fact the simulation of a robot arm actuated via motorized joints is a trivial problem, but here we do the opposite: we drive the end effector via a rheonomic constraint defining an imposed trajectory respect to the base, hence the rest of the arm will naturally move to the configuration prescribed by joint constraints; however since the mass of the end effector is much lighter than the bicept, since some joints are redundant\footnote{The robot has a gravity compensator modeled via two revolute joints and one cylindrical joint, leading to an overconstrained loop.} and since the robot passes close to a singularity, the simulation of the robot alone is a challenging task. That is, even without contacts, most iterative solvers like SOR or Jacobi would converge too slowly, and even Krylov linear solvers like GMRES, CG, MINRES would require many iterations unless equipped by some preconditioner. In our test, convergence to high precision is achieved in 15 iterations at most, where just one or two of them require a refactorization of the saddle-point matrix. Moreover, when there are no contacts, the solution is provided in exactly one step, as the iteration boils down to a single factorization followed by a forward/back solve just like when simulating the robot via a direct solver in the conventional context of smooth dynamics.
  
 
 
@@ -1084,18 +1157,18 @@ This benchmark aims at estimating the efficiency and robustness of the method in
 
 
 
-\subsection{Deformable tire}
-
-\begin{figure}[!tbp]
-  \centering
-	\includegraphics[width=0.32\textwidth]{pics/tire_5.png}
-  \includegraphics[width=0.32\textwidth]{pics/tire_10.png}
-	\includegraphics[width=0.32\textwidth]{pics/tire_15.png}
+%\subsection{Deformable tire}
+%
+%\begin{figure}[!tbp]
+  %\centering
+	%\includegraphics[width=0.32\textwidth]{pics/tire_5.png}
+  %\includegraphics[width=0.32\textwidth]{pics/tire_10.png}
+	%\includegraphics[width=0.32\textwidth]{pics/tire_15.png}
 	%\includegraphics[width=0.24\textwidth]{pics/tire_20.png}
-	\hfill
-  \caption{\textsc{Test 5}. Large deformation of a finite element mesh colliding with a plane. Thanks to the non-smooth formulation, large time steps can be used (only ten steps have been used from start to end) and no penalty parameters must be used in contact points. Contacts between lugs and ground show zero interpenetration regardless of the stiffness of the mesh.}
-	\label{fig:tire}
-\end{figure}
+	%\hfill
+  %\caption{\textsc{Test 5}. Large deformation of a finite element mesh colliding with a plane. Thanks to the non-smooth formulation, large time steps can be used (only ten steps have been used from start to end) and no penalty parameters must be used in contact points. Contacts between lugs and ground show zero interpenetration regardless of the stiffness of the mesh.}
+	%\label{fig:tire}
+%\end{figure}
 
 
 

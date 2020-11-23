@@ -71,10 +71,12 @@
 %\author{Alessandro Tasora \\ alessandro.tasora@unipr.it}
 \author{Alessandro Tasora}
 \ead{alessandro.tasora@unipr.it}
-\author{Simone Benatti}
-\ead{simone.benatti@studenti.unipr.it}
 \author{Dario Mangoni}
 \ead{dario.mangoni@unipr.it}
+\author{Simone Benatti}
+\ead{simone.benatti@studenti.unipr.it}
+\author{Rinaldo Garziera}
+\ead{rinaldo.garziera@unipr.it}
 \address{Universit\`a degli Studi di Parma, \\Dpt. of Engineering and Architecture\\Parco Area delle Scienze, 181/A, 43124 Parma, Italy }
 
 % \affil[]{Universit\`a degli Studi di Parma, \\ 
@@ -82,20 +84,6 @@
 % \footnote{E-mail addresses: alessandro.tasora@unipr.it (A. Tasora), \\ simone.benatti@studenti.unipr.it (S. Benatti) dario.mangoni@studenti.unipr.it (D. Mangoni), rinaldo.garziera@unipr.it (R.Garziera).}
 % }
 
-
-\begin{abstract} 
-This work discusses an efficient formulation of a geometrically exact three-dimensional beam which can be used in dynamical simulations involving large displacements, collisions and non-linear materials. To this end, we base our model on the shear-flexible Cosserat rod theory and we implement it in the context of Isogeometric Analysis (IGA). 
-According to the IGA approach, the centerline of the beam is parameterized using splines; in our work the rotation of the section is parameterized by a spline interpolation of quaternions, and time integration of rotations is performed using the exponential map of quaternions. Aiming at an efficient and robust simulation of contacts, we propose the adoption of a non-smooth dynamics formulation based on differential-variational inequalities. 
-The model has been implemented in an open-source physics simulation library that can simulate actuators, finite elements, rigid bodies, constraints, collisions and frictional contacts. 
-This beam model has been tested on various benchmarks in order to assess its validity in non-linear static and dynamic analysis; in all cases the model behaved consistently with theoretical results and experimental data. 
-\end{abstract}
-
-\begin{keyword}
-ADMM \sep non-smooth dynamics \sep contact
-\end{keyword}
-
-
-\maketitle              % typeset the title of the contribution
 
 \begin{abstract}
 We propose to use the Alternating Direction Method of Multipliers (ADMM) for solving the variational inequality that arises in non-smooth contact problems in multibody simulations. The ADMM method is based on simple computational primitives and offers good convergence properties especially for scenarios where loose tolerance on the precision can be accepted, thus making it attractive also for real-time applications. The method scales well with the problem size and require a small number of tuning parameters. Differently from other methods known in literature, such as fixed point iterations, it can easily handle problems that mix finite elements and rigid bodies, and it is only marginally affected by odd mass ratios or ill-posed problems. Another attractive feature is that it can be easily warm-started.
@@ -106,6 +94,7 @@ ADMM \sep non-smooth dynamics \sep contact
 \end{keyword}
 
 
+\maketitle              % typeset the title of the contribution
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -383,7 +372,7 @@ and in fact, the CCP \eqref{eq:ChronoCCP} can be written in the more conventiona
 \end{subequations}
 After the convex program \eqref{eq:ChronoCCP_min} is solved by ADMM, one can compute 
 \begin{align}
-\vect{v} = H^{-1}( \vect{k} + \bar{D}_\epsilon \vect{\gamma}_\epsilon)
+\vect{v} = H^{-1}( \vect{k} + D_\epsilon \vect{\gamma}_\epsilon)
 \label{eq:v_post}
 \end{align}
 with an immediate step. 

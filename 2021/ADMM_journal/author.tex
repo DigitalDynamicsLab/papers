@@ -769,7 +769,7 @@ The algorithm above contains a single computational bottleneck, that is the solu
 
 \subsection{Preconditioning}
 
-We experienced that the convergence of Algorithm \ref{algo:admm1} is negatively affected by the presence of odd mass ratios in the mechanical system. The immediate effect of uneven mass ratio is a broadening of the interval of singular values of the $N$ matrix. Note that this can be also a consequence of using different measuring units for different constraint multipliers $\gamma_i$, for instance even a system with odd mass ratios can have a badly conditioned $N$ matrix if some constraint reactions are assumed in newtons, other in kilo newtons - clearly, as the choice of measuring units is arbitrary, one should find a way to make the solver as much insensitive as possible to the scaling of the constraints. 
+We experienced that the convergence of Algorithm \ref{algo:admm1} is negatively affected by the presence of odd mass ratios in the mechanical system. The immediate effect of uneven mass ratio is a broadening of the spectrum of the $N$ matrix. Note that this can be also a consequence of using different measuring units for different constraint multipliers $\gamma_i$, for instance even a system with odd mass ratios can have a badly conditioned $N$ matrix if some constraint reactions are assumed in newtons, other in kilo newtons - clearly, as the choice of measuring units is arbitrary, one should find a way to make the solver as much insensitive as possible to the scaling of the constraints. 
 
 A possible remedy for this difficulty is to perform a simplified form of preconditioning by doing a diagonal scaling of $N$ and $\vect{r}_\epsilon$ before starting the iteration, thus operating on the scaled form of the problem:
 %

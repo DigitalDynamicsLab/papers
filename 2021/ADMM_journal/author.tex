@@ -312,18 +312,19 @@ Different time stepping schemes have been proposed for MDIs, here we refer to th
 
 where 
 \begin{itemize}
-		\item unknown $\vect{v}$ is the speed at the end of the time step $h$
-		\item unknown $\vect{\gamma}_\epsilon$ is the reaction in contacts and bilateral joints, a vector-signed measure with Lebesgue decomposition in atomic parts (impacts) and continuous parts (continuous reactions)
-    \item $H$ is a positive definite matrix containing $M$, the block-diagonal matrix of the masses and inertia tensors of the bodies; if stiff
+		\item unknown $\vect{v} \in \mathbb{R}^{n_v}$ is the speed at the end of the time step $h$
+		\item unknown $\vect{\gamma}_\epsilon \in \mathbb{R}^{n_c}$ is the reaction in contacts and bilateral joints, a vector-signed measure with Lebesgue decomposition in atomic parts (impacts) and continuous parts (continuous reactions)
+    \item $H \in \mathbb{R}^{n_v \times n_v}$ is a positive definite matrix containing $M$, 
+		the block-diagonal matrix of the masses and inertia tensors of the bodies; if stiff
 		loads are added too (ex. when finite elements come into play) it becomes a block-sparse matrix including the tangent stiffness and damping matrices,
 		for instance $H=M-{h^2}\nabla_q\vect{f}-{h}\nabla_v\vect{f}$ in case of the first-order time stepper in \cite{TasoraAnitescuCMAME10}
-    \item $D_\epsilon$ is a sparse matrix, the transpose jacobian of all constraints
-    \item $\vect{k}$ is a vector containing terms proportional to applied forces $\vect{f}$
-    \item $\vect{b}$ is a vector containing constraint stabilization terms, among other things
-    \item $\Upsilon$ is the Cartesian product of all cones of admissible constraint forces, $\Upsilon = \bigtimes_i \Upsilon_i$
-    \item if a frictional contact is added, $\Upsilon_i \subset \mathbb{R}^3$ is a second order Lorentz cone with aperture proportional to friction coefficient
-    \item if a bilateral constraint is added, $\Upsilon_i = \mathbb{R}$ and $\Upsilon^\circ_i = \{0\}$
-    \item if a unilateral constraint is added, $\Upsilon_i = \mathbb{R}^+$ and $\Upsilon^\circ_i = \mathbb{R}^-$
+    \item $D_\epsilon \in \mathbb{R}^{n_v \times n_c}$ is a sparse matrix, the transpose jacobian of all constraints
+    \item $\vect{k} \in \mathbb{R}^{n_v}$ is a vector containing terms proportional to applied forces $\vect{f}$ and to the last known speed,
+    \item $\vect{b} \in \mathbb{R}^{n_c}$ is a vector containing constraint stabilization terms and rheonomic terms,
+    \item $\Upsilon$ is the Cartesian product of all cones of admissible constraint forces, $\Upsilon = \bigtimes_j \Upsilon_j$
+    \item if a frictional contact is added, $\Upsilon_j \subset \mathbb{R}^3$ is a second order Lorentz cone with aperture proportional to friction coefficient
+    \item if a bilateral constraint is added, $\Upsilon_j = \mathbb{R}$ and $\Upsilon^\circ_j = \{0\}$
+    \item if a unilateral constraint is added, $\Upsilon_j = \mathbb{R}^+$ and $\Upsilon^\circ_j = \mathbb{R}^-$
     \item $\Upsilon^{\circ}$ is the polar cone, opposite of the dual cone, i.e. $\Upsilon^{*} = -\Upsilon^\circ$.
 \end{itemize}
 
@@ -639,7 +640,7 @@ Before being able to apply this iteration in real problems, we should introduce 
 \subsection{Residuals and termination}
 
 In order to monitor the convergence of the method, a measure of residual quantities must be introduced. 
-Given the definitions \eqref{eq:primalfeasibility1},\eqref{eq:primalfeasibility1},\eqref{eq:primalfeasibility1}, one can define a primal and a dual residual as:
+Given the definitions \eqref{eq:primalfeasibility1},\eqref{eq:dualfeasibility1},\eqref{eq:dualfeasibility2}, one can define a primal and a dual residual as:
 %
 \begin{align}
  \vect{r}_{\text{primal}}^{k+1} &= \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1}   \\
@@ -703,7 +704,7 @@ In all the cases above, one needs safeguards to avoid excessive scaling, for exa
 \subsection{Custom treatment of bilateral joints}
 
 We experienced that it is possible to use a $\rho$ value that changes on a per-constraint basis. If one could know in advance which contact will be active at the solution, one could split $\rho_i$ values between very high or very low values for the fastest convergence, however this is not possible because the set of active constraints is known only at the solution. However, we still can use a
-simple heuristics consisting in forcing a small value $\rho_b = 1e-9$ for bilateral constraints, where one knows in advance that the corresponding dual variable $y_i$ would be null anyway. This produces better convergence results in systems containing both contacts and many bilateral joints, such as when simulating articulated robots that grasp some objects. 
+simple heuristics consisting in forcing a small value $\rho_b = \SI{1e-9}{}$ for bilateral constraints, where one knows in advance that the corresponding dual variable $y_i$ would be null anyway. This produces better convergence results in systems containing both contacts and many bilateral joints, such as when simulating articulated robots that grasp some objects. 
 
 This means that, instead of using a scalar $\rho^{k}$, in our code we use a diagonal matrix $\Theta^{k}$ defined as:
 \begin{align}
@@ -789,9 +790,19 @@ Note that other more advanced (and CPU intensive) preconditioners could be used,
 After the solution is computed, one can quickly recover $\vect{\gamma}_\epsilon = S \breve{\vect{\gamma}}_\epsilon$. 
 
 Note that in sake of high performance we never build explicitly $\breve{N}$ and $\breve{\vect{r}}^T_\epsilon$: what we need is just a scaling of the saddle point matrix involved in \eqref{eq:admm_step1}, that will simply include the scaled jacobians
-$\breve{D}_\epsilon = S D_\epsilon$, the scaled compliance
+$\breve{D}_\epsilon = D_\epsilon S$, the scaled compliance
 $\breve{C}_\epsilon = S C_\epsilon S$,  the scaled term 
-$\breve{\vect{b}}_\epsilon = S \breve{\vect{b}}_\epsilon$.
+$\breve{\vect{b}}_\epsilon = S \vect{b}_\epsilon$, the scaled set
+$\breve{\Upsilon} = \left\{ \breve{\vect{\gamma}} : S \breve{\vect{\gamma}}_\epsilon \in \Upsilon  \right\}$.
+
+The scaled form of the problem would require a projection $\Pi_{\breve{\Upsilon}}$, however this can be simplified we use the same $S_{ii}$ values for each triplet corresponding to the $j$-th friction cone constraint, for uniform scaling of the $j$-th cone, thus $\Pi_{\breve{\Upsilon}}(\breve{\vect{z}}) = \Pi_{\Upsilon}(\breve{\vect{z}})$. 
+More in general, for a convex set $\mathcal{C}$, again assuming a uniform scaling for each $\mathcal{C}_j$ set, one can use the simplification
+\[
+\Pi_{\breve{\mathcal{C}}}(\breve{\vect{z}}) 
+= \Pi_{\breve{\mathcal{C}}}(S^{-1}\vect{z}) 
+= S^{-1} \Pi_{\mathcal{C}}(\vect{z}) 
+= S^{-1} \Pi_{\mathcal{C}}( S \breve{\vect{z}})
+\]
 
 The preconditioned form of the ADMM algorithm, that we call P-ADMM heretofore, is not reported here for compactness: it is enough to replace the above scaled quantities in Agorithm \ref{algo:admm1}, where $\breve{\vect{\gamma}}_\epsilon,\breve{\vect{y}},\breve{\vect{z}}$ will replace $\vect{\gamma}_\epsilon, \vect{y}, \vect{z}$, then a final step is added after convergence, to recover the unscaled solution: $\vect{\gamma}_\epsilon = S \breve{\vect{\gamma}}_\epsilon$. Moreover, if one is interested in the residuals in the not-scaled original form, for instance to verify convergence, these can be computed as 
 %
@@ -799,6 +810,38 @@ The preconditioned form of the ADMM algorithm, that we call P-ADMM heretofore, i
 \vect{r}_{\text{primal}}^{k+1} &= S \left( \breve{\vect{\gamma}}_\epsilon^{k+1}-\breve{\vect{z}}^{k+1} \right) \nonumber \\
 \vect{r}_{\text{dual}}^{k+1}   &= S^{-1} \Theta^k (\breve{\vect{z}}^{k+1} - \breve{\vect{z}}^{k}) \nonumber
 \end{align}
+
+As an alternative, one can see that the preconditioned algorithm can be written with the original variables $\vect{\gamma}_\epsilon, \vect{y}, \vect{z}$ if one substitutes the scaled variables and performs some algebraic simplifications, obtaining the following steps:
+\begin{subequations}
+\begin{align}
+\begin{bmatrix}
+			 H   & D_\epsilon \\
+			 D^T & - \Theta^k S^{-2} - C_\epsilon
+			\end{bmatrix}
+			\begin{Bmatrix}
+				\vect{v}^{k+1}  \\
+			 -\vect{\gamma}_\epsilon^{k+1}
+			\end{Bmatrix}
+			=
+			\begin{Bmatrix}
+			 \vect{k} \\
+			 -\vect{b}_\epsilon + \Theta^k S^{-2} \vect{z}^k - \vect{y}^k 
+			\end{Bmatrix} \\
+	  \vect{z}^{k+1} = \Pi_\Upsilon \left(  \vect{\gamma}_\epsilon^{k+1} +(\Theta^k)^{-1} S^{2} \vect{y}^k \right ) \\
+		\vect{y}^{k+1} = \vect{y}^k + \Theta^k S^{-2} \left( \vect{\gamma}_\epsilon^{k+1} - \vect{z}^{k+1} \right)
+\end{align}
+\label{eq:admm_precond_simple}
+\end{subequations}
+%
+The method above corresponds to using the original ADMM algorithm with a non-uniform step $\Theta^k S^{-2}$, with $(S^{-2})_{ii} = {N_{ii}}$, hence it avoids the necessity of scaling all variables and matrices. However, when one needs to compute the residuals (for instance for termination criteria or for step scaling policies), in this simplified algorithm \eqref{eq:admm_precond_simple} those must be computed as:
+%
+\begin{align}
+\vect{r}_{\text{primal}}^{k+1} &= \left( \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1} \right) \nonumber \\
+\vect{r}_{\text{dual}}^{k+1}   &= \Theta^k S^{-2} (\vect{z}^{k+1} - \vect{z}^{k}) \nonumber \\
+\breve{\vect{r}}_{\text{primal}}^{k+1} &= S^{-1} \left( \vect{\gamma}_\epsilon^{k+1}-\vect{z}^{k+1} \right) \nonumber \\
+\breve{\vect{r}}_{\text{dual}}^{k+1}   &= \Theta^k S^{-1} (\vect{z}^{k+1} - \vect{z}^{k}) \nonumber
+\end{align}
+
 
 
 \subsection{Warm starting}

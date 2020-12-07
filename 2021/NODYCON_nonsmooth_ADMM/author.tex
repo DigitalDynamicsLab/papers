@@ -81,6 +81,9 @@ We propose to use the Alternating Direction Method of Multipliers (ADMM) for sol
 
 \section{Introduction}
 
+Simulation of complex systems involving multiple contacts between mechanical parts can lead to problems of non-smooth dynamics. In such framework, contacts and frictional effects are represented by set-valued functions, thus leading to a more complex mathematical framework respect to conventional smooth Ordinary Differential Equations (ODE) or Differential-Algebraic Equations (DAE). In the latter, in fact, frictional contacts are often approximated as smooth regularizations, hence introducing spring-like penalty forces that allow the adoption of typical ODE or DAE time integrators, but at the same time incurring in low stability unless very small time steps are used.
+
+
 Following the seminal works by Moreau 
 \cite{mor88,Jean1992} 
 most formulations for non-smooth dynamical problems are based on Measure Differential Inclusions (MDI): just like differential inclusions they allow set-valued force laws (such as the Coulomb-Amontons dry friction model) but also generalize to the case where velocity is assumed to be a possibly discontinuous function of bounded variation in order to allow impulsive events.
@@ -103,7 +106,7 @@ Another option is to solve the CCP as an optimization problem, using first-order
 the Nesterov accelerated projected gradient descend  
 \cite{hammadTOG2015}
 or the Barzilai-Borwein spectral projected gradient
-\cite{heynIJNME2013}. These methods are based on a simple projection operator,  matrix-by-vector multiplications and inner products. Their convergence is better than for fixed points iterations, however they share with them the following issue: that they often require the building of a Delassus operator, a matrix that is easy to compute in efficient (factored and sparse) format if diagonal masses are used because these can be easily inverted, but hard to handle if finite elements are added to the problem, because they introduce stiffness and damping matrices whose inverse would be needed as well.
+\cite{heynIJNME2013}. These methods are based on a simple projection operator,  matrix-by-vector multiplications and inner products. Their convergence is better than for fixed points iterations, however they share with them the following issue: that they often require the building of a Delassus operator, that is a Schur complement matrix that is easy to compute in efficient (factored and sparse) format if diagonal masses are used because these can be easily inverted, but hard to handle if finite elements are added to the problem, because they introduce stiffness and damping matrices whose inverse would be needed as well.
 
 A further class of solvers is represented by non-smooth newton methods, such as the one presented in 
 \cite{Macklin2019} % Non-smooth Newton Method
@@ -364,7 +367,7 @@ Using these results, and adding a Krasnoselskii-Mann relaxation factor $\alpha \
 The iteration is terminated when $\vect{r}_{\text{prim}}$ and $\vect{r}_{\text{dual}}$ fall under prescribed tolerances. We remark that setting proper values for $\rho$ is of fundamental importance in order to obtain a good speed of convergence. In most cases one can use heuristics and adjust $\rho$ only one or two times during the iterations, hence allowing to reuse the factorization of the linear system. Also, $\sigma$ acts similarly to a regularization term, and can be left to low values anyway.
 
 
-\begin{figure}[h!]
+\begin{figure}[!tbp]
 \centering
 \includegraphics[width=0.50\textwidth]{t8_convergence.pdf}
 \includegraphics[width=0.35\textwidth, trim=0cm -3cm 0 3cm]{t8_snapshot.png}
@@ -373,10 +376,24 @@ The iteration is terminated when $\vect{r}_{\text{prim}}$ and $\vect{r}_{\text{d
 \end{figure}
 
 
+\subsection{Deformable tire}
+
+\begin{figure}[!tbp]
+  \centering
+	\includegraphics[width=0.32\textwidth]{tire_5.png}
+  \includegraphics[width=0.32\textwidth]{tire_10.png}
+	%\includegraphics[width=0.32\textwidth]{tire_15.png}
+	\includegraphics[width=0.32\textwidth]{tire_20.png}
+	\hfill
+  \caption{\textsc{Test 5}. Large deformation of a finite element mesh colliding with a plane. Thanks to the non-smooth formulation, large time steps can be used (only ten steps have been used from start to end) and no penalty parameters must be used in contact points. Contacts between lugs and ground show zero interpenetration regardless of the stiffness of the mesh.}
+	\label{fig:tire}
+\end{figure}
+
 
 \section{Results and conclusion}
 
 We performed benchmarks involving multi-body systems with contacts between multiple parts, showing that the performance of the ADMM method is capable of handling problems that would converge too slowly using conventional projected fixed point methods (see Fig.\ref{fig:t8}) or even first-order SPG spectral methods \cite{heynIJNME2013}.
+An additional benefit of ADMM, when compared with those methods, is that it does not require the computation of a Schur complement, hence it can be applied seamlessly to problems featuring a block-sparse matrix in place of the diagonal $M$ in \eqref{eq:ChronoMCCP}, such as when introducing stiffness and damping matrices for finite elements (see \ref{fig:tire}).
 
 Our ADMM method requires few computational primitives: basically a projection of dual variables on conic sets, a backward solve of a linear system, and a forward solve. The latter is a computational bottleneck, but it can be performed only once per run, as the matrix does not change often during the iterations. 
 A good estimation of the ADMM step size proved to be fundamental in achieving good convergence: using some heuristics we obtained an efficient auto-tuning algorithm. 

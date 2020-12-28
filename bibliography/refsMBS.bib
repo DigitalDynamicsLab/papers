@@ -7743,10 +7743,11 @@ doi = {10.1016/j.proeng.2015.01.183}
 }
 
 @Conference{Jean1992,
-  author    = {Michel Jean and Jean Jacques Moreau},
-  booktitle = {1st Contact Mechanics International Symposium, Lausanne, Switzerland.},
-  title     = {Unilaterality and dry friction in the dynamics of rigid body collections},
-  year      = {1992},
+  author       = {Michel Jean and Jean Jacques Moreau},
+  booktitle    = {1st Contact Mechanics International Symposium, Lausanne, Switzerland.},
+  title        = {Unilaterality and dry friction in the dynamics of rigid body collections},
+  year         = {1992},
+  organization = {1st Contact Mechanics International Symposium},
 }
 
 @Article{Bender2014,
@@ -7765,6 +7766,56 @@ doi = {10.1016/j.proeng.2015.01.183}
   keywords  = {position-based simulation, shape matching, data-driven upsampling, deformable solids, fluids, I.3.7 Computer Graphics: Three-Dimensional Graphics and Realism Animation},
   url       = {https://onlinelibrary.wiley.com/doi/abs/10.1111/cgf.12346},
   urldate   = {2020-09-10},
+}
+
+@Unpublished{LeLidec2020,
+  author   = {Le Lidec, Quentin and Kalevatykh, Igor and Laptev, Ivan and Schmid, Cordelia and Carpentier, Justin},
+  note     = {Available online (HAL)},
+  title    = {Differentiable simulation for physical system identification},
+  month    = nov,
+  year     = {2020},
+  abstract = {Simulating frictional contacts remains a challenging research topic in robotics. Recently, differentiable physics emerged and has proven to be a key element in modelbased Reinforcement Learning (RL) and optimal control fields. However, most of the current formulations deploy coarse approximations of the underlying physical principles. Indeed, the classic simulators lose precision by casting the Nonlinear Complementarity Problem (NCP) of frictional contact into a Linear Complementarity Problem (LCP) to simplify computations. Moreover, such methods deploy non-smooth operations and cannot be automatically differentiated. In this paper, we propose (i) an extension of the staggered projections algorithm for more accurate solutions of the problem of contacts with friction. Based on this formulation, we introduce (ii) a differentiable simulator and an efficient way to compute the analytical derivatives of the involved optimization problems. Finally, (iii) we validate the proposed framework with a set of experiments to present a possible application of our differentiable simulator. In particular, using our approach we demonstrate accurate estimation of friction coefficients and object masses both in synthetic and real experiments.},
+  annote   = {working paper or preprint},
+  file     = {HAL PDF Full Text:https\://hal.archives-ouvertes.fr/hal-03025616/document:application/pdf},
+  keywords = {Contact Modeling, Simulation and Animation, Optimization and Optimal Control, Calibration and Identification},
+  url      = {https://hal.archives-ouvertes.fr/hal-03025616},
+  urldate  = {2020-12-22},
+}
+
+@InProceedings{Macklin2019a,
+  author       = {Macklin, Miles and Storey, Kier and Lu, Michelle and Terdiman, Pierre and Chentanez, Nuttapong and Jeschke, Stefan and Müller, Matthias},
+  booktitle    = {Proceedings of the 18th annual {ACM} {SIGGRAPH}/{Eurographics} {Symposium} on {Computer} {Animation}},
+  title        = {Small steps in physics simulation},
+  year         = {2019},
+  address      = {New York, NY, USA},
+  month        = jul,
+  organization = {ACM SIGGRAPH},
+  pages        = {1--7},
+  publisher    = {Association for Computing Machinery},
+  series       = {{SCA} '19},
+  abstract     = {In this paper we re-examine the idea that implicit integrators with large time steps offer the best stability/performance trade-off for stiff systems. We make the surprising observation that performing a single large time step with n constraint solver iterations is less effective than computing n smaller time steps, each with a single constraint solver iteration. Based on this observation, our approach is to split every visual time step into n substeps of length ?t/n and to perform a single iteration of extended position-based dynamics (XPBD) in each such substep. When compared to a traditional implicit integrator with large time steps we find constraint error and damping are significantly reduced. When compared to an explicit integrator we find that our method is more stable and robust for a wider range of stiffness parameters. This result holds even when compared against more sophisticated implicit solvers based on Krylov methods. Our method is straightforward to implement, and is not sensitive to matrix conditioning nor is it to overconstrained problems.},
+  doi          = {10.1145/3309486.3340247},
+  isbn         = {9781450366779},
+  keywords     = {real-time simulation, physics-based animation},
+  url          = {https://doi.org/10.1145/3309486.3340247},
+  urldate      = {2020-12-28},
+}
+
+@Article{Francu2017,
+  author   = {Frâncu, Mihai and Moldoveanu, Florica},
+  journal  = {Computers \& Graphics},
+  title    = {Position based simulation of solids with accurate contact handling},
+  year     = {2017},
+  issn     = {0097-8493},
+  month    = dec,
+  pages    = {12--23},
+  volume   = {69},
+  abstract = {Simulating multi-body dynamics with both rigid and flexible parts and with frictional contacts is a hard problem. We solve this by expressing the couplings between the bodies as position level constraints. The implicit treatment of the constraint directions gives us improved stability over velocity based methods. Then by employing regularization of nonlinear constraints and a convex minimization formulation, we bridge constraint-based methods to traditional force-based methods. In fact, the former are just a dual variables formulation of the latter. We solve this dual problem using position based dynamics (PBD). We show how PBD is a completely valid modeling technique and we extend it with an accurate contact and Coulomb friction model. We further show for the first time how the same solver can be used to simulate both rigid and deformable solids with two way coupling. For the soft bodies we introduce a novel form of linear finite elements expressed as constraints, that is more accurate than PBD mass-spring systems. More of our results include the energy conserving Newmark integrator and the accelerated Jacobi solver suitable for parallel architectures. Note that this paper is an extended and revised version of the conference paper published in [1].},
+  doi      = {10.1016/j.cag.2017.09.004},
+  keywords = {Position based dynamics, Projection, Rigid body simulation, Finite element method, Frictional contact},
+  language = {en},
+  url      = {http://www.sciencedirect.com/science/article/pii/S0097849317301565},
+  urldate  = {2020-12-28},
 }
 
 @Comment{jabref-meta: databaseType:bibtex;}

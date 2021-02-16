@@ -1,0 +1,344 @@
+\documentclass[final,12pt]{article}
+
+% For journal layout:
+% \documentclass[final,1p,times]{elsarticle}
+% \documentclass[final,1p,times,twocolumn]{elsarticle}
+% \documentclass[final,3p,times]{elsarticle}
+% \documentclass[final,3p,times,twocolumn]{elsarticle}
+% \documentclass[final,5p,times]{elsarticle}
+% \documentclass[final,5p,times,twocolumn]{elsarticle}
+
+%% Use packages ---------------------------------------------
+\usepackage[english]{babel}
+\usepackage{amssymb} 
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{color}
+\usepackage{subcaption}
+
+%% Customization --------------------------------------------
+% New commands Tasora 
+\def\vect#1{{\boldsymbol{#1}}}
+\def\quat#1{{\boldsymbol{#1}}}
+\def\conj{\hskip0.1em^*} % the matrix as [R(a)] , with letter between two (autoresizing) square brackets
+\def\amatr#1{{#1}}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+
+% New commands Fusai 
+\newcommand{\hl}[1]{\textcolor{red}{#1}}
+
+% comandi per risposte a reviewers  etc.
+
+% METTERE LA SEGUENTE LINEA COME COMMENTO, O TOGLIERLA, PER VEDERE LA LETTERA 
+% DI RISPOSTA SENZA LE NOSTRE ANNOTAZIONI Giovanni:... Alessandro:.. Dario...  
+% E LASCIARE SOLO COMMENTI E RISPOSTE
+
+\def\showcomments{1}
+
+\definecolor{mycommentcolor}{rgb}{0.23, 0.45, 0.6}
+\definecolor{alecolor}{rgb}{0.0, 0.6, 0.0}
+
+\def\reviewercomment#1{{\vskip4mm \color{mycommentcolor} \textit{#1} \vskip2mm}}
+
+\def\alessandro#1{
+\ifx\showcomments\undefined
+\else
+    {\color{alecolor} \small \begingroup \leftskip=1.5cm \noindent Alessandro: #1 \par \endgroup}
+\fi
+}
+
+
+% Title
+\title{ \textbf{Responses to Reviewer's  on:} \\
+Solving Variational Inequalities and Cone Complementarity Problems in Non-Smooth Dynamics using the Alternating Direction Method of Multipliers}
+
+\author{A. Tasora, D. Mangoni, S. Benatti, R. Garziera}
+	
+
+%% Document ----------------------------------------------
+\begin{document}
+
+\maketitle
+
+
+
+% Sections
+
+We would like to thank the reviewers for their thoughtful comments and
+efforts towards the improvement of our manuscript. In the following document we include
+our replies to their comments, where the light text color (in italic font) is used
+for the original comment from the reviewers.
+
+\section{Reviewer 1}
+
+We thank the Reviewer for the useful comments. 
+In the following we will address his requests and suggestions.
+
+
+\reviewercomment{
+1. The references cited for the Measure Differential Inclusion (MDI) include a CISM course and a
+conference. These are not resources that are easily accessible to everyone. I would strongly
+recommend that an accessible resource be cited in their place. Same holds for references 3,
+10, 18, 20, 21, 35.
+}
+
+We replaced references [1] and [2] with journal articles, as suggested by the Reviewer. We kept reference [3] as is, because it is not a conference but a quite popular book. We kept also reference [10] because the ACM SIGGRAPH conferences are important and their proceedings are always accessible. The article [18] is a journal paper, available online nowadays (some difficulty to access it depends on the fact that Morrocco, the name of the author, is spelled Morroco in some databases). We left other references to conferences when proceedings are accessible and there are no alternative versions on journals.  
+
+
+\reviewercomment{
+2. DOI’s are probably not useful for older papers that are already published. I would suggest
+uniformity by mentioning DOI for all or none.
+}
+
+I suppose unnecessary DOIs will be managed later, by the typesetting department at Wiley, because in the "`Author guidelines"' web page of NME they say \textit{Where possible the DOI for the reference should be included at the end of the reference}. 
+
+\reviewercomment{
+3. The authors cite Ref [3] as a source to discussion complementarity problems. But this is not a
+resource again available easily and I would recommend citing a more resourceful reference.
+}
+
+We added more references to VIs and complementarity problems in that paragraph, mentioning two other popular references. 
+
+
+\reviewercomment{
+4. I would recommend a nomenclature and abbreviation listing at the start considering that there
+are several abbreviations employed in the text.
+}
+
+We added a listing of the abbreviations at the beginning of the paper. 
+
+
+\reviewercomment{
+5. In page 3, the authors specify that the CCP and NCP approaches are not suitable for
+applicability with finite elements. This is a very generic statement. I would like to highlight two
+recent works where CCP has been implemented with ANCF elements and in a Finite Element
+framework. These works also compare the performance with standard methods (like penalty)
+that are often employed. \\
+...
+}
+
+We thank the Reviewer for pointing out these recent papers. We added them to the list of references and we improved the discussion (see revised interoduction). 
+We note, in passing, that the CCP methods outlined in the two references above use a Schur matrix in the form $N=D^TM^{-1}D$, hence without the introduction of tangent stiffness and damping matrices as jacobians of internal forces (something that could be needed when the stiffness of the elements is too large to be handled by the time stepping method without running into instability). This was the rationale of our paragraph: once the Schur matrix becomes too dense to be handled efficiently, one should avoid assembling it at all - and in the current paper we avoid building it, in fact. This is also discussed later, between Formula 31 and Theorem 1.   
+
+
+\reviewercomment{
+6. From the introduction and literature review, the aim of the authors is unclear. Is this paper
+oriented towards computer graphics or mechanics-related applications? Most of the
+discussions pertaining to the available literature is aimed at computer graphics applications.
+While non-penetration is an important condition, accurate retrieval of the contact stresses is
+also particularly important for mechanics-related applications. This is not discussed in the
+literature review nor in the results.
+}
+
+The paper is oriented more towards mechanical application, indeed. The fact that literature is mostly targeting computer graphics depends on the fact that complementarity-based approaches are very robust - a quality that triggered lot of interest in the computer graphics community in the last decade. At the other hand, the CG community is often not interested in results that are precise at an engineering level (as they can accept visually-plausible results with low fidelity), so this is stimulating our research on methods that could satisfy the needs of both words: the need of stability and robustness, from the CG field, and the need of precision from the engineering field. Another point that facilitates the problem in the CG area is the fact that CG problems with contacts and deformable parts often involve jelly-like objects with low stiffness (rods, hairs, tissues, flesh), whereas in the engineering area we often deal with steel, aluminium and other structures with high stiffness. We added a discussion at the beginning of the Benchmark section.
+ 
+
+\reviewercomment{
+7. The “Remark” before and after Definition 6 is the same. Is there a particular reason for the
+repetition?
+}
+
+Thank you for noticing this. We removed the repetition.
+
+
+
+\section{Reviewer 2}
+
+\reviewercomment{
+The manuscript focuses on accelerating the solution of the frictional contact problem for rigid and flexible body dynamics. The authors work with an established way of modeling the frictional contact problem, and subsequently carrying out its time discretization. The resulting CCP is solved by means of a new technique, which draws on work done in optimization in relation to the Alternating Direction Method of Multipliers method.
+}
+
+We thank the Reviewer for his notes, that are helping us to increase the quality of the paper. Also we thank the Reviewer because of the many stylistic improvements that he listed, about grammar, syntax and style.
+
+ We address his requests and comments in the following paragraphs:
+  
+
+\reviewercomment{
+- without adding $C_\epsilon$ in Eq. 33(a), would this approach lead to a unique set of frictional contact forces? Or is there a possibility of finding an infinite number of compatible solutions? Is adding $C_\epsilon$ eliminating this possibility?
+}
+
+Correct, the $C_\epsilon$ has an effect toward the regularization of the system, therefore a nonzero $C_\epsilon$ guarantees that there is a unique set of solutions (the mechanical equivalence is that there are both normal and tangential springs at each contact, thus eliminating the redundancy of forces that would arise even in very simple problems like a three leg table over a flat plane if there is static friction). For zero $C_\epsilon$, one cannot rule out the case that $\rho$ becomes close to zero because of the $\rho$ automatic adjustment during the iteration, and in that case one could approach singularity (note that this would also correspond to the pivot-breakdown of the solver if a direct solver is used).
+
+\reviewercomment{
+- the CCP approach advocated here has some numerical artifacts, e.g., if a brick moves really fast on ground, there will be a lifting force that reduces the normal force at the brick-ground interface. Is the ADMM approach advocated here good enough to deal with other frictional contact models that lead to optimization problems whose solution eschews the said lift-off artifact?
+}
+
+This is an interesting point. The CCP approach we refer to, is based on a convexified model where one can experience the "lifting" effect. \footnote{We note, in passing, that this lift off is balanced by a stabilization coefficient that makes the sliding object to float with a gap of height $h\approxeq v \mu h$, where $v$ is tangential speed, $\mu$ is friction coeff. and $h$ is time step, so it is negligible for small time steps or small speeds.} The proper way to get rid of the lifting effect would be to use the original non-convexified complementarity problem. Using the De Saxce bipotential formulation of the generic non-associated Coulomb friction, CCP of Eq.13 looses the friendly affine structure of the 
+$\vect{u}_\epsilon =  N \vect{\gamma}_\epsilon + \vect{r}_\epsilon$ 
+term, and one would use rather 
+$\vect{u}_\epsilon =   N \vect{\gamma}_\epsilon + \vect{r}_\epsilon + \tilde{\vect{u}}_\epsilon(\vect{\gamma}_\epsilon)$ where $\tilde{\vect{u}}_\epsilon(\vect{\gamma}_\epsilon)$ is a term that depends quadratically on the velocity of tangential sliding. However, this done, the resulting CCP 
+$-\Upsilon^{\circ} \ni \vect{u}_\epsilon \bot \vect{\gamma}_\epsilon \in \Upsilon$ would not lead any more to a convex optimization problem. Although the paper [31] (Anderson Acceleration etc., Ouyang et al. 2020) speculates that ADMM could solve non-convex problems, this has been proved only empirically and for limited cases, so we prefer not to discuss the non-convex case in our current manuscript: it would be an interesting extension though, and we thank the Reviewer for the suggestion. 
+
+
+\reviewercomment{
+Suggested list of corrections, small improvements:
+- Abstract: “multi-flexible-body problems” – perhaps “flexible multi-body problems”?
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- Abstract: “In sake of computational performance” – “In order to improve computational performance”?
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P.1.: “In sake of better numerical performance and stability” – “In search of better numerical performance and stability”. NOTE: the authors should revisit the use of “in sake” since it’s not a proper language construct. It shows up in several places in the manuscript
+}
+
+$\rightarrow$ Corrected, also in other places. Thank you for helping us to improve the language of the manuscript. 
+
+\reviewercomment{
+- P2: “stimulated many researches on” – “stimulated research on” ?
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P2: “algorithm, however” – maybe start a new sentence “algorithm. However,…”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P2: “sub iterations” – “sub-iterations”
+}
+
+$\rightarrow$ Corrected.
+
+
+
+\reviewercomment{
+- P2: “is even more critical if odd mass” – “is even more challenged if odd mass”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P2: “happen when simulating” – “happens when simulating”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P2: “in form” – “in the form”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P2: “newton methods” – “Newton methods”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P2: “This requires a simplifying assumption about the Coulomb friction being associative instead of non-associative” – can you please explain what this statement means, perhaps even in one sentence in less, in the manuscript?
+}
+
+Thank you for the suggestion. We added two or three lines explaining this point:  
+\textit{This artificial associativity of the friction model means that the relative sliding velocity in a contact point will be restricted to the dual cone of the Coulomb friction cone, whereas the original model has a more relaxed condition, assuming that such velocity could be even parallel to the surface: the practical consequence is that grazing motion cause an artificial lift-off - however this artifact can be attenuated thanks to the introduction of a stabilization term [cite{ani04}]}
+
+\reviewercomment{
+- P2: “offer a superior convergence respect” – “offer superior convergence with respect”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P2: “in fact they require” – “in that they require”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P2: “and cast the original” – “and casts the original”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P3: “they compares”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P3: “on the top of this method we” – “building off this method, we”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P3: “of such ADMM is that” – “of the approach is that”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P3: “such linear system most often” – “the linear system most often”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P3: “In our embodiment” – “In the approach proposed herein”
+}
+
+$\rightarrow$ Corrected.\\
+
+\reviewercomment{
+- P4: “Remark. The indicator function of any closed set is lower semicontinuous…” – this shows up twice
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P4 (footnote): “the plastic flow might deviate respect to the” – “the plastic flow might deviate with respect to the”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P9: “We experienced that it is possible to use a” – “We experimented with the idea of using a”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P11: “in fact, after ADMM computes” – “In fact, after ADMM computes”
+}
+
+$\rightarrow$ Corrected.
+
+\reviewercomment{
+- P12: “Chrono open-source library” – provide reference to this library. Also to Eigen and Pardiso
+}
+
+Two references to papers about the mentioned libraries have been added.
+
+
+
+
+
+
+
+
+
+
+
+
+\vskip15mm
+
+Best regards,
+
+\vskip10mm
+
+the Authors
+
+
+
+\end{document}
+\endinput
+%% End document -----------------------------------------

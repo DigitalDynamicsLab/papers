@@ -6183,13 +6183,13 @@ Report RT-0400, INRIA},
 }
 
 @InCollection{chronoOverview2016,
-  Title                    = {{{\CHRONO}}: An open source multi-physics dynamics engine},
-  Author                   = {Tasora, A. and Serban, R. and Mazhar, H. and Pazouki, A. and Melanz, D. and Fleischmann, J. and Taylor, M. and Sugiyama, H. and Negrut, D.},
-  Booktitle                = {{High Performance Computing in Science and Engineering -- Lecture Notes in Computer Science}},
-  Publisher                = {Springer},
-  Year                     = {2016},
-  Editor                   = {Kozubek, T.},
-  Pages                    = {19--49}
+  author    = {Tasora, A. and Serban, R. and Mazhar, H. and Pazouki, A. and Melanz, D. and Fleischmann, J. and Taylor, M. and Sugiyama, H. and Negrut, D.},
+  booktitle = {{High Performance Computing in Science and Engineering -- Lecture Notes in Computer Science}},
+  publisher = {Springer},
+  title     = {{{CHRONO}}: An open source multi-physics dynamics engine},
+  year      = {2016},
+  editor    = {Kozubek, T.},
+  pages     = {19--49},
 }
 
 @Unpublished{tbbDownload,
@@ -7816,6 +7816,62 @@ doi = {10.1016/j.proeng.2015.01.183}
   language = {en},
   url      = {http://www.sciencedirect.com/science/article/pii/S0097849317301565},
   urldate  = {2020-12-28},
+}
+
+@Article{Moreau1983,
+  author   = {Moreau, Jean Jacques},
+  journal  = {Comptes rendus hebdomadaires des séances de l'Académie des sciences},
+  title    = {Liaisons unilatérales sans frottement et chocs inélastiques},
+  year     = {1983},
+  pages    = {1473--1476},
+  volume   = {296},
+  file     = {Full Text PDF:https\://hal.archives-ouvertes.fr/hal-01868215/document:application/pdf},
+  language = {fr},
+  url      = {https://hal.archives-ouvertes.fr/hal-01868215},
+  urldate  = {2021-02-15},
+}
+
+@Book{moreau1988topics,
+  author    = {Moreau, Jean Jacques and Panagiotopoulos, Panagiotis D and Strang, Gilbert},
+  publisher = {Birkhauser},
+  title     = {Topics in nonsmooth mechanics},
+  year      = {1988},
+}
+
+@Article{Yu2020,
+  author    = {Yu, Xinxin and Matikainen, Marko K and Harish, Ajay B and Mikkola, Aki},
+  journal   = {Proceedings of the Institution of Mechanical Engineers, Part K: Journal of Multi-body Dynamics},
+  title     = {Procedure for non-smooth contact for planar flexible beams with cone complementarity problem},
+  year      = {2020},
+  issn      = {1464-4193},
+  month     = sep,
+  pages     = {1464419320957450},
+  abstract  = {Contact description plays an important role in modeling of applications involving flexible multibody dynamics. Example of such applications include contact between a belt and pulley, crash-worthiness analysis in aerospace and automotive engineering. Approaches such as the linear complementarity problem (LCP), nonlinear complementarity problem (NCP) and penalty method have been proposed for contact detection and imposition of contact constraints. Contact description within multibody dynamics, however, continues to be a challenging topic, particularly in the case of flexible bodies. This paper describes and compares the use of two contact descriptions in the framework of flexible multibody dynamics; (1) the use of nonlinear cone complementarity approach (CCP) and (2) the penalty method. Both contact models are presented together with a master-slave detection algorithm. The modified form of node-to-node approach presented facilitates creation of pseudo-nodes where gap function can be calculated. This reduces the cumbersome effort of contact search. Since large deformations can be an important phenomenon in flexible multibody applications, beam elements based on the absolute nodal coordinate formulation (ANCF) are implemented in this study. To make a comparison of two approaches, the damping component is included in the penalty method by using the continuous contact model introduced by Hunt and Crossley. Numerical results are based on the simulation of ANCF beam contact with rigid ground, rigid body with an arbitrary shape and pendulum contact. Although kinematic results show a good agreement between both approaches when the coefficient of restitution is zero, the unphysical interpenetration appears in the penalty method. Nonlinear minimization problem solved by CCP approach helps to prevent the penetration during contact event. Furthermore, the proposed contact detection algorithm is proved to be capable of being used for multiple contact between beam and arbitrary shape rigid body; different contact types, such as side-by-side and corner-by-side, can be performed without prediction.},
+  doi       = {10.1177/1464419320957450},
+  file      = {SAGE PDF Full Text:https\://journals.sagepub.com/doi/pdf/10.1177/1464419320957450:application/pdf},
+  keywords  = {ANCF, contact mechanics, cone complementarity problem, penalty method},
+  language  = {en},
+  publisher = {SAGE Publications},
+  url       = {https://doi.org/10.1177/1464419320957450},
+  urldate   = {2021-02-15},
+}
+
+@Article{Bozorgmehri2021,
+  author   = {Bozorgmehri, Babak and Yu, Xinxin and Matikainen, Marko K. and Harish, Ajay B. and Mikkola, Aki},
+  journal  = {Nonlinear Dynamics},
+  title    = {A study of contact methods in the application of large deformation dynamics in self-contact beam},
+  year     = {2021},
+  issn     = {1573-269X},
+  month    = jan,
+  number   = {1},
+  pages    = {581--616},
+  volume   = {103},
+  abstract = {This paper introduces a procedure in the field of computational contact mechanics to analyze contact dynamics of beams undergoing large overall motion with large deformations and in self-contact situations. The presented contact procedure consists of a contact search algorithm which is employed with two approaches to impose contact constraint. The contact search task aims to detect the contact events and to identify the contact point candidates that is accomplished using an algorithm based on intersection of the oriented bounding boxes (OBBs). To impose the contact constraint, an approach based on the complementarity problem (CP) is introduced in the context of beam-to-beam contact. The other approach to enforce the contact constraint in this work is the penalty method, which is often used in the finite element and multibody literature. The latter contact force model is compared against the frictionless variant of the complementarity problem approach, linear complementarity problem approach (LCP). In the considered approaches, the absolute nodal coordinate formulation (ANCF) is used as an underlying finite element method for modeling beam-like structures in multibody applications, in particular. The employed penalty method makes use of an internal iteration scheme based on the Newton solver to fulfill the criteria for minimal penetration. Numerical examples in the case of flexible beams demonstrate the applicability of the introduced approach in a situation where a variety of contact types occur. It was found that the employed contact detection method is sufficiently accurate when paired with the studied contact constraint imposition models in simulation of the contact dynamics problems. It is further shown that the optimization-based complementarity problem approach is computationally more economical than the classical penalty method in the case of studied 2D-problems.},
+  doi      = {10.1007/s11071-020-05984-x},
+  file     = {Springer Full Text PDF:https\://link.springer.com/content/pdf/10.1007%2Fs11071-020-05984-x.pdf:application/pdf},
+  language = {en},
+  url      = {https://doi.org/10.1007/s11071-020-05984-x},
+  urldate  = {2021-02-15},
 }
 
 @Comment{jabref-meta: databaseType:bibtex;}

@@ -36,7 +36,11 @@
 \usepackage{xcolor}
 %\usepackage[title]{appendix}
 \usepackage{empheq}
-
+\usepackage{framed} % Framing content
+\usepackage{nomencl} % Nomenclature package
+\makenomenclature
+\setlength{\nomlabelwidth}{2cm}
+\setlength{\nomitemsep}{-0.1cm} % Baseline skip between items
 
 \def\UrlFont{\rmfamily}
 
@@ -96,7 +100,7 @@
 
 
 \abstract[Summary]{
-This work presents a numerical method for the solution of variational inequalities arising in non-smooth multi-flexible-body problems that involve set-valued forces. For the special case of hard frictional contacts, the method solves a second order cone complementarity problem. We ground our algorithm on the Alternating Direction Method of Multipliers (ADMM), an efficient and robust optimization method that draws on few computational primitives. In sake of computational performance, we reformulated the original ADMM scheme in order to exploit the sparsity of constraint jacobians and we added optimizations such as warm starting and adaptive step scaling. The proposed method can be used in scenarios that pose major difficulties to other methods available in literature for complementarity in contact dynamics, namely when using very stiff finite elements and when simulating articulated mechanisms with odd mass ratios. The method can have applications in the fields of robotics, vehicle dynamics, virtual reality, and multi-physics simulation in general.
+This work presents a numerical method for the solution of variational inequalities arising in non-smooth flexible multi-body problems that involve set-valued forces. For the special case of hard frictional contacts, the method solves a second order cone complementarity problem. We ground our algorithm on the Alternating Direction Method of Multipliers (ADMM), an efficient and robust optimization method that draws on few computational primitives. In order to improve computational performance, we reformulated the original ADMM scheme in order to exploit the sparsity of constraint jacobians and we added optimizations such as warm starting and adaptive step scaling. The proposed method can be used in scenarios that pose major difficulties to other methods available in literature for complementarity in contact dynamics, namely when using very stiff finite elements and when simulating articulated mechanisms with odd mass ratios. The method can have applications in the fields of robotics, vehicle dynamics, virtual reality, and multi-physics simulation in general.
 }
 
 \keywords{
@@ -113,40 +117,40 @@ Contact, friction, ADMM, non-smooth dynamics, simulation
 
 Problems involving frictional contacts can be found in many engineering fields. Their simulation is a challenging task because the discontinuous nature of contact phenomena discourages the adoption of conventional time integration schemes, which assume continuous velocities and accelerations. In fact, if on the one hand it is possible to turn a discontinuous model into a smooth Ordinary Differential Equation (ODE) by approximating contact forces via spring-damper penalty forces, on the other this usually requires the adoption of extremely small time steps. 
 
-In sake of better numerical performance and stability, even in case of large time steps, we rather formulate the original non-smooth dynamical problem as a Measure Differential Inclusion (MDI). MDIs were pioneered by Moreau in the eighties, among others, in sake of a viable approach to the simulation of mechanical systems with hard contacts
-\cite{mor88,Jean1992}. 
+In search of better numerical performance and stability, even in case of large time steps, we rather formulate the original non-smooth dynamical problem as a Measure Differential Inclusion (MDI). MDIs were pioneered by Moreau in the eighties, among others, aiming at a viable approach to the simulation of mechanical systems with hard contacts
+\cite{Moreau1983,moreau1988topics}. 
 Being differential inclusions, they can directly embed set-valued force laws, such as the Coulomb friction model, but they also generalize to the case where velocity is assumed to be a (possibly) discontinuous function of bounded variation, therefore they admit impulsive events.
 
-MDIs can be solved using special time stepping methods that offer high stability and robustness, however this comes at the cost of solving a  Variational Inequality (VI) per each time step. In many cases, VIs correspond to Complementarity Problems (CP) 
- \cite{acary2008numerical}.  
+MDIs can be solved using special time stepping methods that offer high stability and robustness, however this comes at the cost of solving a Complementarity Problems (CP) per each time step \cite{acary2008numerical}. These CPs correspond to the broader class of Variational Inequalities (VI) \cite{Kinderleher1980,Harker1990}.
 
-In general, the solution of VIs or CPs represents the major numerical bottleneck in the entire time stepping process of the MDI, especially when dealing with many parts or many contacts. For instance, similar scenarios can happen when simulating packaging devices, ground-machine interaction, rock dynamics, masonry structures and granular materials, where the unknowns of the VIs (contact forces) can amount to thousands or millions. This challenge stimulated many researches on efficient numerical methods in the last three decades.  
+In general, the solution of VIs or CPs represents the major numerical bottleneck in the entire time stepping process of the MDI, especially when dealing with many parts or many contacts. For instance, similar scenarios can happen when simulating packaging devices, ground-machine interaction, rock dynamics, masonry structures and granular materials, where the unknowns of the VIs (contact forces) can amount to thousands or millions. This challenge stimulated research on efficient numerical methods in the last three decades. 
 
 Among the former strategies for solving this class of problems, we cite the idea of solving a Linear Complementarity Problem (LCP) per each time step
 \cite{StTr95}  % LCP solved via Lemke
 .
-Once cast as a LCP, the VI problem can be solved by direct LCP solvers such as the Lemke algorithm, however LCP direct solvers often lead to complex sub iterations that do not scale well with increasing number of unknowns, hence they are not much used nowadays. Another drawback of casting the problem as a LCP is that they introduce a polyhedral approximation, for example the Coulomb friction cone would be approximated as a faceted pyramid, introducing a numerical source of anisotropy. 
+Once cast as a LCP, the VI problem can be solved by direct LCP solvers such as the Lemke algorithm. However, LCP direct solvers often lead to complex sub-iterations that do not scale well with increasing number of unknowns, hence they are not much used nowadays. Another drawback of casting the problem as a LCP is that they introduce a polyhedral approximation, for example the Coulomb friction cone would be approximated as a faceted pyramid, introducing a numerical source of anisotropy. 
 
 At the other end of the spectrum are iterative methods that aim at high robustness and efficiency even at the expense of sacrificing accuracy, since this is often acceptable in fields like real time simulation, video games and virtual reality \cite{Bender2014}.
 In these fields, the most used approach nowadays consists in fixed point iterations, similarly to Gauss-Seidel, SOR or Jacobi stationary methods, interleaved with simple projections onto the constraint sets at each iteration
 \cite{anitescuTasora2008,massSplittingRichard2012,AleMihaiFriction2013} % P-GS iteration
 .
-The major issue of these methods is that they exhibit slow convergence when the system contains long kinematic chains or long sequences of contacts, such as when including high stacks of objects \cite{TasoraAnitescuCMAME10}. Their convergence is even more critical if odd mass ratios are encountered: this often happen when simulating industrial robots, earth-moving machines, complex vehicle suspensions, car drivelines. In these cases the convergence might stall soon, hence if the iterations are truncated in order to meet a time budget in real-time applications, the resulting simulation can be affected by low accuracy - usually detectable in form of objects that interpenetrate at the point of contact and mechanisms that fall apart. Optimizations like warm starting and sub-stepping can alleviate the drawbacks of these methods \cite{Macklin2019a}.
+The major issue of these methods is that they exhibit slow convergence when the system contains long kinematic chains or long sequences of contacts, such as when including high stacks of objects \cite{TasoraAnitescuCMAME10}. Their convergence is even more challenged if odd mass ratios are encountered: this often happens when simulating industrial robots, earth-moving machines, complex vehicle suspensions, car drivelines. In these cases the convergence might stall soon, hence if the iterations are truncated in order to meet a time budget in real-time applications, the resulting simulation can be affected by low accuracy - usually detectable in the form of objects that interpenetrate at the point of contact and mechanisms that fall apart. Optimizations like warm starting and sub-stepping can alleviate the drawbacks of these methods \cite{Macklin2019a}.
 
-A more advanced class of solvers is represented by non-smooth newton methods, such as the one presented in 
+A more advanced class of solvers is represented by non-smooth Newton methods, such as the one presented in 
 \cite{Macklin2019} % Non-smooth Newton Method
 , that assume a generic Nonlinear Complemetarity Problem (NCP), again a sub case of a VI, and that enforce the NCP complementarity constraints using non-smooth functions like the Fisher-Burmeister function. In these methods, a generalized non-smooth Newton method can be used to find the zero of the functions, but this comes at the cost of solving a linear system per each iteration.
 
-Recent efforts pushed forward the idea of casting the VI of non-smooth dynamics as a convex optimization problem, namely a Quadratic Program (QP) with convex constraints. This requires a simplifying assumption about the Coulomb friction being associative instead of non-associative, a simplification whose artifacts can be attenuated thanks to the introduction of a stabilization term \cite{ani04}. In this setting, the problem is also a convex Cone Complementarity Problem (CCP). The convexity assumption allows the adoption of numerical methods already available for large scale optimization problems. In \cite{heynIJNME2013}, the Barzilai-Borwein spectral projected gradient is used to this end, and in \cite{hammadTOG2015} we used the Nesterov accelerated projected gradient descend to simulate large scale contact problems.
-These are first-order optimization methods, in the sense that they do not require the computation of the Hessian matrix: in fact they rely only on  matrix-by-vector multiplications and inner products (similarly to Krylov subspace methods in the field of linear systems), plus a fast projection operator. Although they offer a superior convergence respect to fixed point iterations, they are not easily applicable to problems involving finite elements. In fact, this class of solvers often perform the matrix-by-vector primitive over a Schur complement matrix, a product of constraint jacobians and inverse of the mass matrix. Since the mass matrix is often (block) diagonal, the Schur complement can be quickly factored at the beginning of the iteration, but if finite elements are used, the Schur matrix would also involve to some extent the inverse of element stiffness matrices and damping matrices, a costly and inefficient operation unless special developments are considered \cite{Francu2017}.
+Recent efforts pushed forward the idea of casting the VI of non-smooth dynamics as a convex optimization problem, namely a Quadratic Program (QP) with convex constraints. This requires a simplifying assumption about the Coulomb friction being associative instead of non-associative. This artificial associativity of the friction model means that the relative sliding velocity in a contact point will be restricted to the dual cone of the Coulomb friction cone, whereas the original model has a more relaxed condition, assuming that such velocity could be even parallel to the surface: the practical consequence is that grazing motion cause an artificial lift-off - however this artifact can be attenuated thanks to the introduction of a stabilization term \cite{ani04}. In this setting, the problem is also a convex Cone Complementarity Problem (CCP). The convexity assumption allows the adoption of numerical methods already available for large scale optimization problems. In \cite{heynIJNME2013}, the Barzilai-Borwein spectral projected gradient is used to this end, and in \cite{hammadTOG2015} we used the Nesterov accelerated projected gradient descend to simulate large scale contact problems.
+These are first-order optimization methods, in the sense that they do not require the computation of the Hessian matrix: in fact they rely only on  matrix-by-vector multiplications and inner products (similarly to Krylov subspace methods in the field of linear systems), plus a fast projection operator. Although they offer superior convergence with respect to fixed point iterations, they are not easily applicable to problems involving finite elements. In fact, this class of solvers often perform the matrix-by-vector primitive over a Schur complement matrix, a product of constraint jacobians and inverse of the mass matrix. Since the mass matrix is often (block) diagonal, the Schur complement can be quickly factored at the beginning of the iteration, but if finite elements are used, the Schur matrix would also involve to some extent the inverse of element stiffness matrices and damping matrices, a costly and inefficient operation unless special developments are considered \cite{Francu2017}.
+Extending complementarity-based approaches in order to encompass finite elements is important because recent research has shown that complementarity-based formulations for large deformation dynamics with contacts often show superior performance when compared to penalty-based approaches \cite{Yu2020,Bozorgmehri2021}.
 
-Another class of solvers that can draw on the optimization-based approach are Interior Point Methods (IPMs). These solvers share some similarities with the previously mentioned non-smooth Newton methods, in fact they require the solution of a saddle-point linear system at each iteration. IPMs offer the best theoretical convergence for the problem at hand \cite{Potra2000}. However, their implementation is complex, and despite the encouraging theoretical properties, in practical scenarios they do not scale well for large problems. One of their drawbacks, also, is that at the present state of knowledge there are no efficient ways to warm-start them \cite{Mangoni2018}. This led us to investigate other methods for constrained optimization problems.
+Another class of solvers that can draw on the optimization-based approach are Interior Point Methods (IPMs). These solvers share some similarities with the previously mentioned non-smooth Newton methods, in that they require the solution of a saddle-point linear system at each iteration. IPMs offer the best theoretical convergence for the problem at hand \cite{Potra2000}. However, their implementation is complex, and despite the encouraging theoretical properties, in practical scenarios they do not scale well for large problems. One of their drawbacks, also, is that at the present state of knowledge there are no efficient ways to warm-start them \cite{Mangoni2018}. This led us to investigate other methods for constrained optimization problems.
 
 The Alternating Direction Method of Multipliers (ADMM) has been proposed in the 1970s 
 \cite{Glowinski75} % [ ADMM invention ]
 \cite{Gabay1976} % [ ADMM invention ]
 as a practical way to solve constrained optimization problems by iterating over the minimization of two (not necessarily differentiable) objectives.
-ADMM introduces auxiliary variables and cast the original problem as the minimization of a separable objective subject to a linear constraint between the original variables and the auxiliary variables. With a proper choice of auxiliary variables, the minimization of the separable function is obtained iterating on two distinct minimization steps of lower complexity. The method iterates updating primal variables, auxiliary variables and dual variables similarly to a fixed point iteration: as such, they compares less favourably to IPMs if one is interested in convergence to high precision, however recent developments showed that in practical scenarios they offer superior speed, scalability and robustness
+ADMM introduces auxiliary variables and casts the original problem as the minimization of a separable objective subject to a linear constraint between the original variables and the auxiliary variables. With a proper choice of auxiliary variables, the minimization of the separable function is obtained iterating on two distinct minimization steps of lower complexity. The method iterates updating primal variables, auxiliary variables and dual variables similarly to a fixed point iteration: as such, they compare less favourably to IPMs if one is interested in convergence to high precision, however recent developments showed that in practical scenarios they offer superior speed, scalability and robustness
  \cite{Boyd2011}. % [ ADMM general theory and development ].
 These positive properties triggered a recent revival of ADMM and similar operator-splitting methods even as alternatives to IPMs, especially in distributed convex optimization with large-scale problems where moderate precision is acceptable
 \cite{Cannon2019}. % [COSMO  conic operator splitting method for large convex problems].
@@ -173,7 +177,7 @@ the Nesterov acceleration method has been proposed for problems where at least o
 %
 In 
  \cite{Kadkhodaie2015} %  [ A2DM2 accelerated ADMM, strongly convex ]
-a similar acceleration method has been proposed, with $\mathcal{O}(\frac{1}{k^2})$ convergence rate, but without the assumption that one of the objectives must be quadratic.
+a similar acceleration method has been proposed, with $\mathcal{O}\left(\frac{1}{k^2}\right)$ convergence rate, but without the assumption that one of the objectives must be quadratic.
 %
 Other types of improvements, based on the Anderson fixed point acceleration, have been put forward in 
  \cite{Zhang2019} % [ ADMM + Anderson acceleration, computergraphics ].
@@ -185,14 +189,38 @@ Recent developments also focused on the possibility of parallelizing the ADMM it
 
 In
 \cite{Stellato2020} % [OSQP: an operator splitting solver for quadratic programs].
-a specialized ADMM method for quadratic problems (OSQP) has been presented: on the top of this method we develop a solver that can exploit the nature of non-smooth dynamical problems. An attractive property of such ADMM is that it requires the solution of a linear system per each iteration, but unlike IPMs, such linear system most often remains unchanged during the iterations, so a factorization can be reused multiple times with a great benefit in terms of speed.
+a specialized ADMM method for quadratic problems (OSQP) has been presented: building off this method, we develop a solver that can exploit the nature of non-smooth dynamical problems. An attractive property of the approach is that it requires the solution of a linear system per each iteration, but unlike IPMs, the linear system most often remains unchanged during the iterations, so a factorization can be reused multiple times with a great benefit in terms of speed.
 
-In our embodiment, unknowns are primal variables (velocity measures) and dual variables (impulses in contact points and joints), the convex cone constraints stem from the Coulomb friction law, and the system matrix includes terms from the mass matrices and from the tangent stiffness/damping matrices (hence it is sparse, but not necessarily diagonal).
+In the approach proposed herein, unknowns are primal variables (velocity measures) and dual variables (impulses in contact points and joints), the convex cone constraints stem from the Coulomb friction law, and the system matrix includes terms from the mass matrices and from the tangent stiffness/damping matrices (hence it is sparse, but not necessarily diagonal).
 
 This paper will present a model for the non-smooth dynamics, it will show how to cast it as a QP with convex conic constraint, it will present the ADMM method to solve it, it will discuss practical implementation details and then it will show benchmarks.
 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% NOTE FOR THE TYPESETTING DEPARTMENT: IF THE NOMENCLATURE FRAME
+%% CONSUMES TOO MUCH SPACE IN THE ARTICLE PAGES, YOU CAN ALSO REMOVE IT. WE ARE
+%% PROPOSING IT, BUT WE CAN ALSO DO WITHOUT IT, IF WE ARE GOING OUT OF THE PAGE BUDGET. 
+
+    \nomenclature[10]{ADMM}{Alternating Direction Method of Multipliers}
+    \nomenclature[10]{FADMM}{Fast Alternating Direction Method of Multipliers}
+    \nomenclature[20]{VI}{Variational Inequality}
+    \nomenclature[30]{MDI}{Measure Differential Inclusion}
+    \nomenclature[40]{CP}{Complementarity Problem}
+    \nomenclature[40]{NCP}{Nonlinear Complementarity Problem}
+    \nomenclature[50]{LCP}{Linear Complementarity Problem}
+    \nomenclature[60]{CCP}{Cone Complementarity Problem}
+    \nomenclature[70]{QP}{Quadratic Program}
+    %\nomenclature[80]{IPM}{Interior Point Method}
+    
+    \begin{table*}[!t]
+       \begin{framed}
+         \printnomenclature
+       \end{framed}
+    \end{table*}
+    
+    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Definitions}
@@ -267,9 +295,6 @@ The \textit{subdifferential} $\partial f(\vect{x}_0)$ at $\vect{x}_0$ of a conve
 \end{equation}
 \end{definition}
 
-\begin{remark*}
-The indicator function of any closed set is lower semicontinuous.
-\end{remark*}
 
 \begin{remark*}
 The subdifferential is a set valued function $\partial f(\vect{x}): \mathbb{R}^n \rightrightarrows \mathbb{R}^n$ in general, but as a special case, if $f(\vect{x})$ is differentiable, $\partial f(\vect{x}) = \left\{ \nabla f(\vect{x}) \right\}$.
@@ -406,10 +431,10 @@ and one can see that \eqref{eq:ChronoCCP_kkt} is a special case of \eqref{eq:OQS
 %The ADMM method requires a fast way to perform a projection $\Pi_{\Upsilon}$ onto the friction cones $\Upsilon$ and a fast way to solve a linear problem with the matrix $A$. 
 
 We remark that the ADMM method just makes the assumption of $\Upsilon$ being convex, so the problem can be generalized to $\vect{\gamma}_\epsilon \in \mathcal{C}$ where $\mathcal{C}$ is a generic convex set, and at the same time we assume an associated 
- \footnote{Not all dissipative constitutive models are associated. For example, in some computational plasticity models, the plastic flow might deviate respect to the normal to the yield surface. Moreover, the Coulomb contact model itself is not associated -in fact the contact velocity $\vect{u}$ can range into a wider cone than the polar of the friction cone, but our MDI model compensates for such effect via a stabilization term. We will assume associated models heretofore, and we do not deal with non-associated models to avoid additional complexity for the moment.} 
+ \footnote{Not all dissipative constitutive models are associated. For example, in some computational plasticity models, the plastic flow might deviate with respect to the normal to the yield surface. Moreover, the Coulomb contact model itself is not associated -in fact the contact velocity $\vect{u}$ can range into a wider cone than the polar of the friction cone, but our MDI model compensates for such effect via a stabilization term. We will assume associated models heretofore, and we do not deal with non-associated models to avoid additional complexity for the moment.} 
 flow $\vect{u}_\epsilon \in - \mathcal{N}_{C}(\vect{\gamma}_\epsilon)$. For instance, $\mathcal{C}$ could be a capped friction cone to represent plasticization of contacts, or a cone translated downward to represent possible adhesion in contact up to a threshold, or the Von Mises yield region if $\vect{\gamma}_\epsilon$ represent stresses in finite elements undergoing plasticization. 
 
-Also, in sake of highest generality, in presence of finite elements one might need to use tangent stiffness matrices $K$ and damping matrices $D$ to accommodate an implicit integration scheme for stiff elements, and this means that the Schur complement would be computed as $N=D_{\epsilon}^T H^{-1} D_{\epsilon}$. Here $H$ is a linear combination of $M$, $K$, $D$ (depending on the integration scheme) and in general is not block-diagonal anymore. 
+Also, aiming at highest generality, in presence of finite elements one might need to use tangent stiffness matrices $K$ and damping matrices $D$ to accommodate an implicit integration scheme for stiff elements, and this means that the Schur complement would be computed as $N=D_{\epsilon}^T H^{-1} D_{\epsilon}$. Here $H$ is a linear combination of $M$, $K$, $D$ (depending on the integration scheme) and in general is not block-diagonal anymore. 
 
 
 
@@ -717,7 +742,7 @@ In all the cases above, one needs safeguards to avoid excessive scaling, for exa
 
 \subsection{Custom treatment of bilateral joints}
 
-We experienced that it is possible to use a $\rho$ value that changes on a per-constraint basis. If one could know in advance which contact will be active at the solution, one could split $\rho_i$ values between very high or very low values for the fastest convergence, however this is not possible because the set of active constraints is known only at the solution. However, we still can use a
+We experimented with the idea of using a $\rho$ value that changes on a per-constraint basis. If one could know in advance which contact will be active at the solution, one could split $\rho_i$ values between very high or very low values for the fastest convergence, however this is not possible because the set of active constraints is known only at the solution. However, we still can use a
 simple heuristics consisting in forcing a small value $\rho_b = \SI{1e-9}{}$ for bilateral constraints, where one knows in advance that the corresponding dual variable $y_i$ would be null anyway. This produces better convergence results in systems containing both contacts and many bilateral joints, such as when simulating articulated robots that grasp some objects. 
 
 This means that, instead of using a scalar $\rho^{k}$, in our code we use a diagonal matrix $\Theta^{k}$ defined as:
@@ -805,7 +830,7 @@ We set $S_{ii} = \sqrt{\frac{1}{N_{ii}}}$.
 Note that other more advanced (and CPU intensive) preconditioners could be used, for example in \cite{Stellato2020} a modified Ruitz equilibration is proposed.  
 After the solution is computed, one can quickly recover $\vect{\gamma}_\epsilon = S \breve{\vect{\gamma}}_\epsilon$. 
 
-Note that in sake of high performance we never build explicitly $\breve{N}$ and $\breve{\vect{r}}^T_\epsilon$: what we need is just a scaling of the saddle point matrix involved in \eqref{eq:admm_step1}, that will simply include the scaled jacobians
+Note that in search of high performance we never build explicitly $\breve{N}$ and $\breve{\vect{r}}^T_\epsilon$: what we need is just a scaling of the saddle point matrix involved in \eqref{eq:admm_step1}, that will simply include the scaled jacobians
 $\breve{D}_\epsilon = D_\epsilon S$, the scaled compliance
 $\breve{C}_\epsilon = S C_\epsilon S$,  the scaled term 
 $\breve{\vect{b}}_\epsilon = S \vect{b}_\epsilon$, the scaled set
@@ -865,7 +890,7 @@ The method above corresponds to using the original ADMM algorithm with a non-uni
 One of the nice properties of ADMM methods is that they can be easily warm started, something that for example is difficult to do with IPMs. 
 This is a relevant feature in our context, because we must solve the problem \eqref{eq:ChronoCCP} at each time step, where one can expect some degree of temporal coherency in the values of $\vect{\gamma}_\epsilon$ between each step. This is especially true for simulations involving stacked objects, like when simulating environments for robots, granular flows or masonry buildings, because the contact forces often show limited changes over time, and the amount of contacts that change state can be limited. If so, one can reuse the last computed values of $\vect{\gamma}_\epsilon$ in the previous time step to warm-start the ADMM solver at the next time step.
 
-This poses two difficulties. First of all, one must develop algorithms and data structures that are able to convey information from the contact at time $t_A$ to a time $t_B = t_A+h$. in fact, after ADMM computes the contact forces at step $t_A$, those could be saved into the contact data structures, however those contacts would be recomputed by the collision detection engine at the next time step $t_B$: since the objects move, also the contact manifold changes, thus it is not trivial to compute which contacts are persistent between the two steps. By using some heuristics and tolerances, one can detect if some contacts at time $t_B$ are the same contacts used at time $t_A$, if so, their last reaction forces $\vect{\gamma}_\epsilon$ can be copied to the new contacts and used for the warm starting, whereas completely new contacts are initialized with $\vect{\gamma}_\epsilon = 0$. 
+This poses two difficulties. First of all, one must develop algorithms and data structures that are able to convey information from the contact at time $t_A$ to a time $t_B = t_A+h$. In fact, after ADMM computes the contact forces at step $t_A$, those could be saved into the contact data structures, however those contacts would be recomputed by the collision detection engine at the next time step $t_B$: since the objects move, also the contact manifold changes, thus it is not trivial to compute which contacts are persistent between the two steps. By using some heuristics and tolerances, one can detect if some contacts at time $t_B$ are the same contacts used at time $t_A$, if so, their last reaction forces $\vect{\gamma}_\epsilon$ can be copied to the new contacts and used for the warm starting, whereas completely new contacts are initialized with $\vect{\gamma}_\epsilon = 0$. 
 
 Furthermore, one can see that the ADDM Algorithm \ref{algo:admm1} is a fixed point 
 $\{\vect{y}^{k+1},\vect{z}^{k+1}\} = \vect{g} \left(\{\vect{y}^k,\vect{z}^k\}\right)$, thus one needs $\{\vect{y}^0,\vect{z}^0\}$ to warm start it, rather than $\vect{\gamma}_\epsilon^0$. This leads to two options: store both $\vect{y}$ and $\vect{z}$ values in the contact data (wasting some memory in case of large scale simulations, and complicating both data structures and bookkeeping) otherwise assume that the last ADMM run converged exactly up to $\vect{r}_{\text{primal}}=0$, so one could just store $\vect{\gamma}_\epsilon$ values in contacts, and then compute
@@ -1011,9 +1036,11 @@ Also, a preconditioned version with diagonal scaling can be obtained with the al
 
 \section{Benchmarks}
 
+In literature there are many examples of iterative solvers for non-smooth dynamics, but many of them are targeting mostly computer-graphics applications, where efficiency and robustness are more important than fidelity and precision. For instance, many benchmarks in computer graphics involve objects with low stiffness (for example tissues, ropes, plastics), whereas we need to test our solver with structures of engineering interest, such as steel structures. Also, the proposed method allows an accurate retrieval of the contact stresses, something that is particularly important for mechanics-related applications and that can be neglected in the computer graphics field. On the basis of these requirements we designed the benchmarks that follow.
+
 All benchmarks have been computed on a Intel\textsuperscript{\textregistered} Core\textsuperscript{\texttrademark} i7-8750H CPU, clocked at \SI{2.20}{GHz}, with 6 physical cores and \SI{16}{GB} of RAM. 
 The ADMM method has been implemented
-in C++ within the Chrono open-source library, using the Eigen library v.3.37 for dense and sparse linear algebra, and Intel\textsuperscript{\textregistered} MKL Pardiso as a direct solver for sparse linear systems.
+in C++ within the Chrono open-source library \cite{chronoOverview2016}, using the Eigen library v.3.37 for dense and sparse linear algebra, and Intel\textsuperscript{\textregistered} MKL Pardiso \cite{Schenk2004} as a direct solver for sparse linear systems.
 
 \subsection{High stack with odd mass ratio}
 
@@ -1230,7 +1257,7 @@ Another optimization that allowed superior performance is the adoption of a diag
 Further research on this topic might address the acceleration of the ADMM method by means of Anderson acceleration.
 
 
-%\bibliographystyle{spmpsci}
+
 \bibliography{../../bibliography/refsMBS,../../bibliography/refsOPT}
 
 

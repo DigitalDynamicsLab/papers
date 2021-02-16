@@ -9,4 +9,5 @@ This is a repository containing
 
 * templates for lab tech reports, theses, etc.
 
-* other
+* please put new papers in directories with the year, and call the subdirectory with a name that gives an idea of the journal/conference and or topic, ex: 2021/CMAME_stability/...
+

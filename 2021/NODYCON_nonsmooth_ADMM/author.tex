@@ -122,6 +122,8 @@ Even if the theoretical convergence of such methods is worse than the one of IPM
 \cite{Cannon2019}. % [COSMO  conic operator splitting method for large convex problems].
 An attractive property of ADMM is that it requires the solution of a linear system per each iteration, but unlike IPMs, such linear system most often remains unchanged during the iterations, so a factorization can be reused multiple times with a great benefit in terms of speed.
 
+A similar scheme, based on a sequential unconstrained minimization technique, has been proposed in \cite{Yunt2006} for non-smooth dynamics and robotics.
+
 In 
 \cite{Stellato2020} % [OSQP: an operator splitting solver for quadratic programs].
 a specialized ADMM method for quadratic problems with conic constraints has been presented: on the top of this method we develop a solver that can exploit the nature of non-smooth dynamical problems. 
@@ -376,8 +378,6 @@ The iteration is terminated when $\vect{r}_{\text{prim}}$ and $\vect{r}_{\text{d
 \end{figure}
 
 
-\subsection{Deformable tire}
-
 \begin{figure}[!tbp]
   \centering
 	\includegraphics[width=0.32\textwidth]{tire_5.png}
@@ -401,7 +401,7 @@ We noted that ADMM can be successfully applied to problems that exhibit temporal
 
 
 \bibliographystyle{spmpsci}
-\bibliography{../../bibliography/refsMBS,../../bibliography/refsOPT}
+\bibliography{refsMBS,refsOPT}
 
 
 

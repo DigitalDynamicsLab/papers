@@ -1,0 +1,79 @@
+\documentclass[preprint, 12pt]{elsarticle}
+
+% For journal layout:
+% \documentclass[final,1p,times]{elsarticle}
+% \documentclass[final,1p,times,twocolumn]{elsarticle}
+% \documentclass[final,3p,times]{elsarticle}
+% \documentclass[final,3p,times,twocolumn]{elsarticle}
+% \documentclass[final,5p,times]{elsarticle}
+% \documentclass[final,5p,times,twocolumn]{elsarticle}
+
+%% Use packages ---------------------------------------------
+\usepackage[english]{babel}
+\usepackage{amssymb} 
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{color}
+\usepackage{subcaption}
+\usepackage{framed} % Framing content
+\usepackage{nomencl} % Nomenclature package
+\usepackage{booktabs}
+\usepackage{siunitx} % SI units
+\makenomenclature
+\setlength{\nomitemsep}{-\parskip} % Baseline skip between items
+
+%% Customization --------------------------------------------
+% New commands Tasora 
+\def\vect#1{{\boldsymbol{#1}}}
+\def\quat#1{{\boldsymbol{#1}}}
+\def\conj{\hskip0.1em^*} % the matrix as [R(a)] , with letter between two (autoresizing) square brackets
+\def\amatr#1{{#1}}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+
+% New commands Fusai 
+\newcommand{\hl}[1]{\textcolor{red}{#1}}
+
+%% Document ----------------------------------------------
+\begin{document}
+
+\journal{Mechanism and Machine Theory}
+
+\begin{frontmatter}
+
+% Title
+\title{A practical algorithm for smooth interpolation between different angular positions}
+
+% Authors and affiliations
+\author[1,2,*]{Giovanni Legnani}
+\author[2]{Irene Fassi}
+\author[3]{Alessandro Tasora}
+\author[3]{Dario Fusai}
+\address[*]{corresponding author, giovanni.legnani@unibs.it}
+\address[1]{DIMI-UniBS Dipartimento Ingegneria Meccanica e Industriale, Università di Brescia, Via Branze 38, 25123 Brescia, Italy}
+\address[2]{STIIMA-CNR Istituto di Sistemi e Tecnologie Industriali per il Manifatturiero Avanzato, National Research Council, Via Alfonso Corti 12, 20133 Milano, Italy}
+\address[3]{Dipartimento di Ingegneria e Architettura, Università di Parma, Parco Area delle Scienze, 181/A - 43124 PARMA, Italy}
+
+% Abstract
+\begin{abstract}
+This paper proposes a new methodology for the interpolation of a given set of 3D rotation poses that have to be reached in successive times by preserving continuity in orientation, angular velocity and angular acceleration. The discussed algorithm ensures the generation of smooth angular trajectories without singularities. The distinctive features of the proposed approach are the straightforward formulation, the reduced computational burden and the lack of iterative procedures. The presented methodology has applications in the generation of spatial motion of mechanical systems (e.g. robotics, flying devices) or in 3D computer graphics. After a theoretical introduction, the proposed algorithm is compared with other methods available in literature and some possible applications are presented.
+\end{abstract}
+
+% Keywords
+\begin{keyword}
+Smooth rotation interpolation \sep Angular trajectory \sep Rotations \sep Quaternions
+\end{keyword}
+
+\end{frontmatter}
+
+% Sections
+\include{PaperQuaternionInterpolation} 
+
+% Bibliography
+\bibliographystyle{plain}
+% \bibliographystyle{elsart-num}
+% \bibliographystyle{alpha}
+\bibliography{bib/bibliografiaRobot}
+
+\end{document}
+\endinput
+%% End document -----------------------------------------
